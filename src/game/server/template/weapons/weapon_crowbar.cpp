@@ -17,6 +17,8 @@
 #include "npcevent.h"
 #include "ai_basenpc.h"
 
+#ifdef IMPORT_HL2
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -234,3 +236,4 @@ void CWeaponCrowbar::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatC
 }
 
 
+#endif

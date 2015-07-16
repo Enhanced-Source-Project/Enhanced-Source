@@ -1,3 +1,4 @@
+
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose:		Pistol - hand gun
@@ -21,6 +22,8 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#ifdef IMPORT_HL2
 
 #define	PISTOL_FASTEST_REFIRE_TIME		0.1f
 #define	PISTOL_FASTEST_DRY_REFIRE_TIME	0.2f
@@ -378,3 +381,4 @@ void CWeaponPistol::AddViewKick( void )
 	//Add it to the view punch
 	pPlayer->ViewPunch( viewPunch );
 }
+#endif

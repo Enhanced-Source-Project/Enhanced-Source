@@ -14,6 +14,7 @@
     <ProjectName>Server (Template)</ProjectName>
     <ProjectGuid>{5F66F048-1D65-4D70-A050-12AB030009BE}</ProjectGuid>
     <RootNamespace>Server Episodic</RootNamespace>
+    <TargetPlatformVersion>8.1</TargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -23,6 +24,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -59,6 +61,9 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">server</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">server</TargetName>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
       <Command>if EXIST ..\..\..\game\template\bin\.\$(TargetFileName) for /f "delims=" %%A in ('attrib "..\..\..\game\template\bin\.\$(TargetFileName)"') do set valveTmpIsReadOnly="%%A"</Command>
@@ -74,8 +79,8 @@
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\template;..\..\game\shared\template;..\..\common;..\..\public;..\..\public\tier0;..\..\public\tier1;.\;..\..\game\shared;..\..\utils\common;..\..\game\server\NextBot;$(IntDir);.\hl2;..\..\game\shared\hl2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;DLLNAME=server;VPCGAME=swarm;VPCGAMECAPS=SWARM;_DLL_EXT=.dll;COMPILER_MSVC32;COMPILER_MSVC;MEMOVERRIDE_MODULE=server;GAME_DLL;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;sprintf=use_Q_snprintf_instead_of_sprintf;strncpy=use_Q_strncpy_instead;_snprintf=use_Q_snprintf_instead;SWARM_DLL;TEMPLATE_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\template;..\..\game\shared\template;..\..\common;..\..\public;..\..\public\tier0;..\..\public\tier1;.\;..\..\game\shared;..\..\utils\common;..\..\game\server\NextBot;$(IntDir);.\hl2;..\..\game\shared\hl2;..\..\game\shared\template\weapons\;.\weapons;.\template\weapons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;IMPORT_HL2;IMPORT_EXAMPLE;DLLNAME=server;VPCGAME=swarm;VPCGAMECAPS=SWARM;_DLL_EXT=.dll;COMPILER_MSVC32;COMPILER_MSVC;MEMOVERRIDE_MODULE=server;GAME_DLL;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;sprintf=use_Q_snprintf_instead_of_sprintf;strncpy=use_Q_strncpy_instead;_snprintf=use_Q_snprintf_instead;SWARM_DLL;TEMPLATE_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>
@@ -246,6 +251,7 @@ exit 1
     <ClCompile Include="..\shared\template\sdk_gamerules_sp.cpp" />
     <ClCompile Include="..\shared\template\sdk_usermessages.cpp" />
     <ClCompile Include="..\shared\template\sdk_weapon_parse.cpp" />
+    <ClCompile Include="..\shared\template\weapons\basesdkcombatweapon_shared.cpp" />
     <ClCompile Include="ai_activity.cpp" />
     <ClCompile Include="ai_addon.cpp" />
     <ClCompile Include="ai_agent.cpp" />
@@ -510,6 +516,9 @@ exit 1
     <ClCompile Include="globalstate.cpp" />
     <ClCompile Include="grenadethrown.cpp" />
     <ClCompile Include="guntarget.cpp" />
+    <ClCompile Include="hl2\grenade_bugbait.cpp" />
+    <ClCompile Include="hl2\item_suit.cpp" />
+    <ClCompile Include="hl2\prop_combine_ball.cpp" />
     <ClCompile Include="h_ai.cpp" />
     <ClCompile Include="h_export.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -684,12 +693,24 @@ exit 1
     </ClCompile>
     <ClCompile Include="scripted.cpp" />
     <ClCompile Include="scriptedtarget.cpp" />
-    <ClCompile Include="template\player_pickup_controller.cpp" />
     <ClCompile Include="template\sdk_client.cpp" />
     <ClCompile Include="template\sdk_eventlog.cpp" />
     <ClCompile Include="template\sdk_player.cpp" />
     <ClCompile Include="template\sdk_playermove.cpp" />
     <ClCompile Include="template\test_entity.cpp" />
+    <ClCompile Include="template\weapons\basebludgeonweapon.cpp" />
+    <ClCompile Include="template\weapons\basesdkcombatweapon.cpp" />
+    <ClCompile Include="template\weapons\weapon_357.cpp" />
+    <ClCompile Include="template\weapons\weapon_ar1.cpp" />
+    <ClCompile Include="template\weapons\weapon_ar2.cpp" />
+    <ClCompile Include="template\weapons\weapon_bugbait.cpp" />
+    <ClCompile Include="template\weapons\weapon_crossbow.cpp" />
+    <ClCompile Include="template\weapons\weapon_crowbar.cpp" />
+    <ClCompile Include="template\weapons\weapon_puntgun.cpp" />
+    <ClCompile Include="template\weapons\weapon_pistol.cpp" />
+    <ClCompile Include="template\weapons\weapon_rpg.cpp" />
+    <ClCompile Include="template\weapons\weapon_shotgun.cpp" />
+    <ClCompile Include="template\weapons\weapon_smg.cpp" />
     <ClCompile Include="template\weapon_cubemap.cpp" />
     <ClCompile Include="sendproxy.cpp" />
     <ClCompile Include="..\shared\sequence_Transitioner.cpp" />
@@ -869,6 +890,7 @@ exit 1
     <ClInclude Include="..\shared\template\sdk_gamerules_sp.h" />
     <ClInclude Include="..\shared\template\sdk_shareddefs.h" />
     <ClInclude Include="..\shared\template\sdk_weapon_parse.h" />
+    <ClInclude Include="..\shared\template\weapons\basesdkcombatweapon_shared.h" />
     <ClInclude Include="ai_addon.h" />
     <ClInclude Include="ai_agent.h" />
     <ClInclude Include="ai_baseactor.h" />
@@ -1043,6 +1065,7 @@ exit 1
     <ClInclude Include="..\shared\hintmessage.h" />
     <ClInclude Include="..\shared\hintsystem.h" />
     <ClInclude Include="..\..\common\hl2orange.spa.h" />
+    <ClInclude Include="hl2\grenade_bugbait.h" />
     <ClInclude Include="hltvdirector.h" />
     <ClInclude Include="..\shared\ichoreoeventcallback.h" />
     <ClInclude Include="..\shared\igamesystem.h" />
@@ -1147,6 +1170,10 @@ exit 1
     <ClInclude Include="TemplateEntities.h" />
     <ClInclude Include="..\shared\touchlink.h" />
     <ClInclude Include="template\sdk_player.h" />
+    <ClInclude Include="template\weapons\basebludgeonweapon.h" />
+    <ClInclude Include="template\weapons\basesdkcombatweapon.h" />
+    <ClInclude Include="template\weapons\weapon_ar2.h" />
+    <ClInclude Include="template\weapons\weapon_rpg.h" />
     <ClInclude Include="trains.h" />
     <ClInclude Include="triggers.h" />
     <ClInclude Include="util.h" />

@@ -76,6 +76,9 @@
     <Filter Include="My Game\Re-includes">
       <UniqueIdentifier>{8cbc6a50-ac58-4705-a162-8043630a8293}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HL2">
+      <UniqueIdentifier>{5c0aed7a-99c3-4c86-b1d9-765e80127d63}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="vscript_client.nut">
@@ -1681,6 +1684,13 @@
     </ClCompile>
     <ClCompile Include="template\c_weapon__stubs.cpp">
       <Filter>My Game\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\c_basesdkcombatweapon.cpp" />
+    <ClCompile Include="template\weapons\c_weapon__stubs_sdk.cpp" />
+    <ClCompile Include="..\shared\template\weapons\basesdkcombatweapon_shared.cpp" />
+    <ClCompile Include="hl2\c_prop_combine_ball.cpp" />
+    <ClCompile Include="hl2\c_weapon_crossbow.cpp">
+      <Filter>HL2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3733,6 +3743,9 @@
     <ClInclude Include="cam_thirdperson.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="template\weapons\c_basesdkcombatweapon.h" />
+    <ClInclude Include="..\shared\template\weapons\basesdkcombatweapon_shared.h" />
+    <ClInclude Include="hl2\c_prop_combine_ball.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\lib\public\bitmap.lib">

@@ -1,3 +1,4 @@
+
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose: A shotgun.
@@ -22,6 +23,8 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#ifdef IMPORT_HL2
 
 extern ConVar sk_auto_reload_time;
 extern ConVar sk_plr_num_shotgun_pellets;
@@ -817,3 +820,4 @@ void CWeaponShotgun::WeaponIdle( void )
 	}
 }
 */
+#endif

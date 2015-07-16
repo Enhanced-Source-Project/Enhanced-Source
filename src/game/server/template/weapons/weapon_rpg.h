@@ -1,9 +1,11 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
 // $NoKeywords: $
 //=============================================================================//
+
+#ifdef IMPORT_HL2
 
 #ifndef WEAPON_RPG_H
 #define WEAPON_RPG_H
@@ -34,7 +36,11 @@ public:
 	CMissile();
 	~CMissile();
 
+#ifdef HL1_DLL
+	Class_T Classify( void ) { return CLASS_NONE; }
+#else
 	Class_T Classify( void ) { return CLASS_MISSILE; }
+#endif
 	
 	void	Spawn( void );
 	void	Precache( void );
@@ -119,7 +125,6 @@ public:
 
 	CAPCMissile();
 	~CAPCMissile();
-	void	Precache( void );
 	void	IgniteDelay( void );
 	void	AugerDelay( float flDelayTime );
 	void	ExplodeDelay( float flDelayTime );
@@ -201,7 +206,6 @@ public:
 	bool	WeaponLOSCondition( const Vector &ownerPos, const Vector &targetPos, bool bSetConditions );
 	int		WeaponRangeAttack1Condition( float flDot, float flDist );
 
-	void	Operator_ForceNPCFire( CBaseCombatCharacter  *pOperator, bool bSecondary, CBaseEntity *pTarget = NULL );
 	void	Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
 	void	StartGuiding( void );
 	void	StopGuiding( void );
@@ -252,3 +256,5 @@ protected:
 };
 
 #endif // WEAPON_RPG_H
+
+#endif

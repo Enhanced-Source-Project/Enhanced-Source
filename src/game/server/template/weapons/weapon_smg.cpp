@@ -1,3 +1,4 @@
+
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
@@ -19,6 +20,9 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#ifdef IMPORT_HL2
+
 
 class CWeaponSMG : public CSDKSelectFireMachineGun
 {
@@ -479,3 +483,4 @@ const WeaponProficiencyInfo_t *CWeaponSMG::GetProficiencyValues()
 
 	return proficiencyTable;
 }
+#endif
