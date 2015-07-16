@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectName>Client (Template)</ProjectName>
     <ProjectGuid>{A26C0361-6B09-9E3D-5194-C9CB89243710}</ProjectGuid>
+    <TargetPlatformVersion>8.1</TargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -22,6 +23,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -54,6 +56,9 @@
     <PreBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</PostBuildEventUseInBuild>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>./weapons;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
       <Command>if EXIST ..\..\..\game\template\bin\.\$(TargetFileName) for /f "delims=" %%A in ('attrib "..\..\..\game\template\bin\.\$(TargetFileName)"') do set valveTmpIsReadOnly="%%A"</Command>
@@ -61,8 +66,8 @@
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\template;.\template\vgui;.\template\gameui;..\..\game\shared\template;.\hl2;..\statemachine;..\..\game\client\gameui;..\..\game\shared\multiplayer;.\;..\..\common;..\..\public;..\..\public\tier0;..\..\public\tier1;..\..\game\shared;.\game_controls;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;DLLNAME=client;VPCGAME=swarm;VPCGAMECAPS=SWARM;_DLL_EXT=.dll;COMPILER_MSVC32;COMPILER_MSVC;MEMOVERRIDE_MODULE=client;NO_STRING_T;CLIENT_DLL;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;strncpy=use_Q_strncpy_instead;_snprintf=use_Q_snprintf_instead;ENABLE_HTMLWINDOW;fopen=dont_use_fopen;SWARM_DLL;TEMPLATE_DLL;GAMEUI_EMBEDDED;GAMEUI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\template;.\template\vgui;.\template\gameui;..\..\game\shared\template;.\hl2;..\statemachine;..\..\game\client\gameui;..\..\game\shared\multiplayer;.\;..\..\common;..\..\public;..\..\public\tier0;..\..\public\tier1;..\..\game\shared;.\game_controls;$(IntDir);../../game\shared\template\weapons;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WIN32;_DEBUG;DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;IMPORT_HL2;IMPORT_EXAMPLE;DLLNAME=client;VPCGAME=swarm;VPCGAMECAPS=SWARM;_DLL_EXT=.dll;COMPILER_MSVC32;COMPILER_MSVC;MEMOVERRIDE_MODULE=client;NO_STRING_T;CLIENT_DLL;VECTOR;VERSION_SAFE_STEAM_API_INTERFACES;PROTECTED_THINGS_ENABLE;strncpy=use_Q_strncpy_instead;_snprintf=use_Q_snprintf_instead;ENABLE_HTMLWINDOW;fopen=dont_use_fopen;SWARM_DLL;TEMPLATE_DLL;GAMEUI_EMBEDDED;GAMEUI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>
@@ -242,6 +247,7 @@ copy "$(TargetDir)"client.dll "C:\Program Files (x86)\Steam\steamapps\common\Sou
     <ClCompile Include="..\shared\template\sdk_gamerules_sp.cpp" />
     <ClCompile Include="..\shared\template\sdk_usermessages.cpp" />
     <ClCompile Include="..\shared\template\sdk_weapon_parse.cpp" />
+    <ClCompile Include="..\shared\template\weapons\basesdkcombatweapon_shared.cpp" />
     <ClCompile Include="achievement_notification_panel.cpp" />
     <ClCompile Include="..\shared\achievement_saverestore.cpp" />
     <ClCompile Include="..\shared\achievementmgr.cpp" />
@@ -360,6 +366,7 @@ copy "$(TargetDir)"client.dll "C:\Program Files (x86)\Steam\steamapps\common\Sou
     <ClCompile Include="c_vehicle_choreo_generic.cpp" />
     <ClCompile Include="c_vehicle_jeep.cpp" />
     <ClCompile Include="c_vguiscreen.cpp" />
+    <ClCompile Include="hl2\c_prop_combine_ball.cpp" />
     <ClCompile Include="hl2\c_waterbullet.cpp" />
     <ClCompile Include="C_WaterLODControl.cpp" />
     <ClCompile Include="c_world.cpp" />
@@ -486,6 +493,7 @@ copy "$(TargetDir)"client.dll "C:\Program Files (x86)\Steam\steamapps\common\Sou
     <ClCompile Include="..\shared\hintmessage.cpp" />
     <ClCompile Include="..\shared\hintsystem.cpp" />
     <ClCompile Include="history_resource.cpp" />
+    <ClCompile Include="hl2\c_weapon_crossbow.cpp" />
     <ClCompile Include="hltvcamera.cpp" />
     <ClCompile Include="hud.cpp" />
     <ClCompile Include="hud_basechat.cpp" />
@@ -920,6 +928,8 @@ copy "$(TargetDir)"client.dll "C:\Program Files (x86)\Steam\steamapps\common\Sou
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="template\weapons\c_basesdkcombatweapon.cpp" />
+    <ClCompile Include="template\weapons\c_weapon__stubs_sdk.cpp" />
     <ClCompile Include="text_message.cpp" />
     <ClCompile Include="texturescrollmaterialproxy.cpp" />
     <ClCompile Include="timematerialproxy.cpp" />
@@ -1068,6 +1078,7 @@ copy "$(TargetDir)"client.dll "C:\Program Files (x86)\Steam\steamapps\common\Sou
     <ClInclude Include="..\shared\template\sdk_gamerules_sp.h" />
     <ClInclude Include="..\shared\template\sdk_shareddefs.h" />
     <ClInclude Include="..\shared\template\sdk_weapon_parse.h" />
+    <ClInclude Include="..\shared\template\weapons\basesdkcombatweapon_shared.h" />
     <ClInclude Include="achievement_notification_panel.h" />
     <ClInclude Include="..\shared\achievement_saverestore.h" />
     <ClInclude Include="..\shared\achievementmgr.h" />
@@ -1093,6 +1104,7 @@ copy "$(TargetDir)"client.dll "C:\Program Files (x86)\Steam\steamapps\common\Sou
     <ClInclude Include="commentary_modelviewer.h" />
     <ClInclude Include="foundryhelpers_client.h" />
     <ClInclude Include="..\shared\game_timescale_shared.h" />
+    <ClInclude Include="hl2\c_prop_combine_ball.h" />
     <ClInclude Include="hud_locator_target.h" />
     <ClInclude Include="..\..\engine\iblackbox.h" />
     <ClInclude Include="modelrendersystem.h" />
@@ -1180,6 +1192,7 @@ copy "$(TargetDir)"client.dll "C:\Program Files (x86)\Steam\steamapps\common\Sou
     <ClInclude Include="template\vgui\nb_header_footer.h" />
     <ClInclude Include="template\vgui\sdk_loading_panel.h" />
     <ClInclude Include="template\vgui\sdk_logo_panel.h" />
+    <ClInclude Include="template\weapons\c_basesdkcombatweapon.h" />
     <ClInclude Include="vgui_avatarimage.h" />
     <ClInclude Include="viewdebug.h" />
     <ClInclude Include="viewpostprocess.h" />

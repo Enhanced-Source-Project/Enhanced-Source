@@ -8,7 +8,7 @@
 #define HL2_PLAYER_H
 #pragma once
 
-#include "player.h"
+#include "../../game/server/player.h"
 #include "hl2_playerlocaldata.h"
 #include "simtimer.h"
 #include "soundenvelope.h"

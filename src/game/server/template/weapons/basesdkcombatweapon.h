@@ -53,6 +53,7 @@ protected:
 // burst fire modes.
 //=========================================================
 // Mode settings for select fire weapons
+
 enum
 {
 	FIREMODE_FULLAUTO = 1,
