@@ -17,10 +17,11 @@
 #include "npcevent.h"
 #include "ai_basenpc.h"
 
-#ifdef IMPORT_HL2
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#ifdef IMPORT_HL2
+
 
 ConVar    sk_plr_dmg_crowbar		( "sk_plr_dmg_crowbar","0");
 ConVar    sk_npc_dmg_crowbar		( "sk_npc_dmg_crowbar","0");

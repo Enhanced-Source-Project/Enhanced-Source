@@ -18,7 +18,6 @@
 #ifdef IMPORT_HL2
 
 #define DAMAGE_PER_SECOND 10
-
 #define MAX_SETTINGS	5
 
 float RateOfFire[ MAX_SETTINGS ] = 

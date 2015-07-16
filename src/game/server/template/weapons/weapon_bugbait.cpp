@@ -17,6 +17,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef IMPORT_HL2
+
 //
 // Bug Bait Weapon
 //
@@ -441,3 +443,5 @@ void CWeaponBugBait::SetSporeEmitterState( bool state )
 {
 	m_bEmitSpores = state;
 }
+
+#endif

@@ -256,5 +256,4 @@ protected:
 };
 
 #endif // WEAPON_RPG_H
-
 #endif

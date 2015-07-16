@@ -4621,6 +4621,7 @@ bool PhysCannonAccountableForObject(CBaseCombatWeapon *pPhysCannon, CBaseEntity 
 	return false;
 }
 
+
 float PlayerPickupGetHeldObjectMass(CBaseEntity *pPickupControllerEntity, IPhysicsObject *pHeldObject)
 {
 	float mass = 0.0f;

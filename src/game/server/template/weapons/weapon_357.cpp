@@ -46,7 +46,6 @@ public:
 };
 
 LINK_ENTITY_TO_CLASS( weapon_357, CWeapon357 );
-
 PRECACHE_WEAPON_REGISTER( weapon_357 );
 
 IMPLEMENT_SERVERCLASS_ST( CWeapon357, DT_Weapon357 )

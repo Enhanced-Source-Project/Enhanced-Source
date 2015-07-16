@@ -483,4 +483,5 @@ const WeaponProficiencyInfo_t *CWeaponSMG::GetProficiencyValues()
 
 	return proficiencyTable;
 }
+
 #endif

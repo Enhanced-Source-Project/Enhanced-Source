@@ -820,4 +820,5 @@ void CWeaponShotgun::WeaponIdle( void )
 	}
 }
 */
+
 #endif

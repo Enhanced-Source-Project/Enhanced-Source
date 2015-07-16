@@ -12,6 +12,7 @@
 #include "c_te_effect_dispatch.h"
 #include "fx_quad.h"
 #include "fx.h"
+// TODO: fix me
 //#include "clienteffectprecachesystem.h"
 #include "view.h"
 #include "view_scene.h"

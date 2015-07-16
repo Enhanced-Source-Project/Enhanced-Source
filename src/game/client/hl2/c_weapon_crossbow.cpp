@@ -153,5 +153,4 @@ void CrosshairLoadCallback( const CEffectData &data )
 		FX_ElectricSpark( position, 1.0f, 1.0f, NULL );
 	}
 }
-
 //DECLARE_CLIENT_EFFECT( "CrossbowLoad", CrosshairLoadCallback );

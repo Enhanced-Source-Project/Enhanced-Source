@@ -38,7 +38,6 @@ ConVar sk_weapon_ar2_alt_fire_duration( "sk_weapon_ar2_alt_fire_duration", "2" )
 ConVar sk_weapon_ar2_alt_fire_mass( "sk_weapon_ar2_alt_fire_mass", "150" );
 
 //=========================================================
-//=========================================================
 
 BEGIN_DATADESC( CWeaponAR2 )
 

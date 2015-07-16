@@ -41,5 +41,4 @@ protected:
 	IMaterial	*m_pBlurMaterial;
 };
 
-
 #endif

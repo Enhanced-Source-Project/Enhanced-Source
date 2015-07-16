@@ -2100,9 +2100,6 @@ void CPointCombineBallLauncher::InputLaunchBall ( inputdata_t &inputdata )
 	SpawnBall();
 }
 
-//-----------------------------------------------------------------------------
-// Spawn a ball
-//-----------------------------------------------------------------------------
 void CPointCombineBallLauncher::SpawnBall()
 {
 	CPropCombineBall *pBall = static_cast<CPropCombineBall*>( CreateEntityByName( "prop_combine_ball" ) );

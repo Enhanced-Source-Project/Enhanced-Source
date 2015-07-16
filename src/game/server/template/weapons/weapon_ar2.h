@@ -77,7 +77,5 @@ protected:
 	DECLARE_DATADESC();
 };
 
-
 #endif	//WEAPONAR2_H
-
 #endif
