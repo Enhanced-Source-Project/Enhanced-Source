@@ -32,7 +32,8 @@
 #include "items.h"
 
 // Our Player walk speed value.
-ConVar player_walkspeed( "player_walkspeed", "190" );
+ConVar player_walkspeed("player_walkspeed", "190");
+ConVar player_normspeed( "player_normspeed", "120" );
 
 // Show annotations?
 ConVar hud_show_annotations( "hud_show_annotations", "1" );
