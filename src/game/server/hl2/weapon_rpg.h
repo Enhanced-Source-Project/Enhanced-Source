@@ -12,7 +12,7 @@
 #pragma once
 #endif
 
-#include "basehlcombatweapon.h"
+#include "basesdkcombatweapon.h"
 #include "Sprite.h"
 #include "npcevent.h"
 #include "beam_shared.h"
@@ -166,9 +166,9 @@ CAPCMissile *FindAPCMissileInCone( const Vector &vecOrigin, const Vector &vecDir
 //-----------------------------------------------------------------------------
 // RPG
 //-----------------------------------------------------------------------------
-class CWeaponRPG : public CBaseHLCombatWeapon
+class CWeaponRPG : public CBaseSDKCombatWeapon
 {
-	DECLARE_CLASS( CWeaponRPG, CBaseHLCombatWeapon );
+	DECLARE_CLASS( CWeaponRPG, CBaseSDKCombatWeapon);
 public:
 
 	CWeaponRPG();

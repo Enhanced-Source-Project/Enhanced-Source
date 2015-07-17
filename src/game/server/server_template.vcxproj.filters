@@ -40,6 +40,15 @@
     <Filter Include="My Game\Re-includes">
       <UniqueIdentifier>{1ce97870-aa79-4d7c-9ff1-3750d7cfa8f4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HL2">
+      <UniqueIdentifier>{8adcc885-b157-4c31-a476-ce620dc837c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HL2\Weapons">
+      <UniqueIdentifier>{354743aa-9247-4db1-85e1-273788d4885b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HL2\Entities">
+      <UniqueIdentifier>{b37075c1-aa98-45f7-90bc-d32b52606b6f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\achievement_saverestore.cpp">
@@ -1440,9 +1449,6 @@
     <ClCompile Include="template\weapon_cubemap.cpp">
       <Filter>My Game\Weapons</Filter>
     </ClCompile>
-    <ClCompile Include="template\player_pickup_controller.cpp">
-      <Filter>My Game\Player</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\template\sdk_usermessages.cpp">
       <Filter>My Game</Filter>
     </ClCompile>
@@ -1460,6 +1466,47 @@
     </ClCompile>
     <ClCompile Include="template\test_entity.cpp">
       <Filter>My Game</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\basebludgeonweapon.cpp" />
+    <ClCompile Include="template\weapons\basesdkcombatweapon.cpp" />
+    <ClCompile Include="..\shared\template\weapons\basesdkcombatweapon_shared.cpp" />
+    <ClCompile Include="template\weapons\weapon_smg.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_crowbar.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_pistol.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_rpg.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_shotgun.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="hl2\item_suit.cpp">
+      <Filter>HL2\Entities</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_ar2.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_ar1.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_357.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="hl2\prop_combine_ball.cpp" />
+    <ClCompile Include="template\weapons\weapon_crossbow.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="template\weapons\weapon_bugbait.cpp">
+      <Filter>HL2\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="hl2\grenade_bugbait.cpp" />
+    <ClCompile Include="template\weapons\weapon_puntgun.cpp">
+      <Filter>HL2\Weapons</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3086,6 +3133,16 @@
     <ClInclude Include="spawn_helper_nut.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="template\weapons\basebludgeonweapon.h" />
+    <ClInclude Include="template\weapons\basesdkcombatweapon.h" />
+    <ClInclude Include="..\shared\template\weapons\basesdkcombatweapon_shared.h" />
+    <ClInclude Include="template\weapons\weapon_rpg.h">
+      <Filter>HL2\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="template\weapons\weapon_ar2.h">
+      <Filter>HL2\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="hl2\grenade_bugbait.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="spawn_helper.nut">

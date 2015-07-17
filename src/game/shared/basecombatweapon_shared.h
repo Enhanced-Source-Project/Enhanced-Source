@@ -565,6 +565,11 @@ public:
 	
 	IPhysicsConstraint		*GetConstraint() { return m_pConstraint; }
 
+#if !defined ( CLIENT_DLL )
+	COutputEvent			m_OnPlayerPickup;	// Fired when the player picks up the weapon.
+	COutputEvent			m_OnNPCPickup;		// Fired when an NPC picks up the weapon.
+#endif
+
 private:
 	WEAPON_FILE_INFO_HANDLE	m_hWeaponFileInfo;
 	IPhysicsConstraint		*m_pConstraint;
@@ -581,8 +586,6 @@ private:
 
 	// Outputs
 	COutputEvent			m_OnPlayerUse;		// Fired when the player uses the weapon.
-	COutputEvent			m_OnPlayerPickup;	// Fired when the player picks up the weapon.
-	COutputEvent			m_OnNPCPickup;		// Fired when an NPC picks up the weapon.
 	COutputEvent			m_OnCacheInteraction;	// For awarding lambda cache achievements in HL2 on 360. See .FGD file for details 
 
 #else // Client .dll only
