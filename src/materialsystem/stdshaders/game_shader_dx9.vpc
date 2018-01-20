@@ -1,0 +1,28 @@
+//-----------------------------------------------------------------------------
+//	game_shader_dx9.vpc
+//
+//	Project Script for mods to use an an example of how to override shaders
+//-----------------------------------------------------------------------------
+
+$Macro OUTBINNAME	"game_shader_dx9"
+$Macro SRCDIR		"..\.."
+$Macro GAMENAME		"downfall"
+$Include "$SRCDIR\materialsystem\stdshaders\game_shader_dx9_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions		"$BASE;PORTAL_ONLY"
+	}
+}
+
+$Project "Shaders (Portal)"
+{
+	$File "portal.cpp"
+	$File "portal_refract.cpp"
+	$File "portal_refract_helper.cpp"
+	$File "portalstaticoverlay.cpp"
+	
+	$File	"buildportalshaders.bat"
+}

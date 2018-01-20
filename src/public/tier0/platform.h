@@ -405,7 +405,11 @@ typedef unsigned int		uint;
 
 	#define RESTRICT				__restrict
 	#define RESTRICT_FUNC			__declspec(restrict)
-	#define FMTFUNCTION( a, b )
+	#ifdef __RESHARPER__
+		#define FMTFUNCTION( fmtargnumber, firstvarargnumber ) [[rscpp::format(printf, fmtargnumber, firstvarargnumber)]]
+	#else
+		#define FMTFUNCTION( a, b )
+	#endif
 	#define NOINLINE
 
 #if !defined( NO_THREAD_LOCAL )

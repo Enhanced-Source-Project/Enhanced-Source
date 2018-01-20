@@ -1,0 +1,64 @@
+//========== Copyright (c) Valve Corporation, All rights reserved. ==========//
+// STATIC: "FULLBRIGHT"					"0..1"
+// STATIC: "FOW"						"0..1"
+// STATIC: "VERTEXCOLOR"				"0..1"
+
+#include "shader_constant_register_map.h"
+#include "common_fog_ps_fxc.h"
+#include "fow_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+sampler BaseSampler1					: register( s0 );	// Base map 1
+
+#if ( FOW == 1 )
+
+sampler FoWSampler					: register( s10 );	// Fog of War
+
+#endif
+
+sampler sLightAccum		: register( s13 );
+//sampler sLightAccum2	: register( s14 );
+const float2 g_vecFullScreenTexel		: register( c3 );
+
+struct PS_INPUT
+{
+	float4 vProjPos							: POSITION;	
+	float2 vBaseTexCoord					: TEXCOORD0;	// xy = blend 1 coord
+	float4 worldPos_projPosZ				: TEXCOORD1;
+
+#if FOW
+	float4 vFowCoord						: TEXCOORD2;	// xy = fow
+#endif // FOW
+
+#if VERTEXCOLOR
+	float4 color							: TEXCOORD3;
+#endif // VERTEXCOLOR
+
+	float2 vScreenPos				: VPOS;
+};
+
+float4 main( PS_INPUT i ) : COLOR
+{
+	float4 result = tex2Dsrgb( BaseSampler1, i.vBaseTexCoord.xy );
+
+	#if VERTEXCOLOR
+	{
+		result.rgb *= i.color.rgb;
+	}
+	#endif
+	
+#if FULLBRIGHT == 0
+	float2 screenPos = ( i.vScreenPos + 0.5f ) * g_vecFullScreenTexel;
+	float4 flLighting = ReadLighting( tex2D( sLightAccum, screenPos ) );
+	//float4 flLighting2 = ReadLighting( tex2D( sLightAccum2, screenPos ) );
+	
+	float defint = length( flLighting );
+	if( defint > 0 )
+		result.rgb = result.rgb * flLighting;
+#if FOW
+	result.rgb = CalcFoW( FoWSampler, i.vFowCoord.xy, result.rgb );
+#endif // FOW
+#endif // FULLBRIGHT
+	
+	return FinalOutput( result, 0, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+}

@@ -1,8 +1,6 @@
 #ifndef DEF_LIGHT_H
 #define DEF_LIGHT_H
 
-#include "cbase.h"
-
 class CMeshBuilder;
 class IDefCookie;
 
@@ -221,6 +219,16 @@ private:
 
 	float flLastRandomTime;
 	float flLastRandomValue;
+};
+
+struct def_light_temp_t : def_light_t
+{
+	def_light_temp_t( bool bWorld = false, float fLifeTime = 1.0f ) : def_light_t( bWorld )
+	{
+		fEndLifeTime = gpGlobals->curtime + fLifeTime;
+	}
+
+	float fEndLifeTime;
 };
 
 #endif

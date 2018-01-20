@@ -175,7 +175,7 @@ void CDeferredLight::Activate()
 			GetDeferredManager()->AddWorldLight( this );
 		}
 		else
-			AssertMsg( 0, "I'm turned off and nobody can turn me on :(" );
+			Warning( "#%d: light_deferred at (%f %f %f) is turned off and can't be turned on\n", entindex(), GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z );
 
 		UTIL_Remove( this );
 	}
@@ -245,7 +245,7 @@ void CDeferredLight::ApplyDataToLight()
 #endif
 
 #if DEFCFG_CONFIGURABLE_VOLUMETRIC_LOD
-	m_pLight->iVolumeSamples = GetVolumeSamples();
+	m_pLight->iVolumeSamples = Clamp( GetVolumeSamples(), 0, 100 );
 #endif
 }
 

@@ -1,0 +1,17 @@
+..\..\..\game\bin\shadercompile.exe 
+..\..\..\game\bin\shadercompile_dll.dll 
+..\..\..\game\bin\tier0.dll 
+..\..\..\game\bin\vstdlib.dll 
+..\..\devtools\bin\d3dx9_33.dll 
+..\..\dx10sdk\utilities\dx9_30\dx_proxy.dll 
+common_flashlight_fxc.h
+common_fog_ps_fxc.h
+common_fxc.h
+common_hlsl_cpp_consts.h
+common_pragmas.h
+common_ps_fxc.h
+common_vertexlitgeneric_dx9.h
+common_vs_fxc.h
+shader_constant_register_map.h
+water_ps30.fxc
+water_vs30.fxc

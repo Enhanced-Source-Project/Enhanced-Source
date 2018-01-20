@@ -1,0 +1,118 @@
+
+// DYNAMIC:		"HAS_SHADOW"		"0..1"
+
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+sampler sNormals							: register( s0 );
+sampler sDepth								: register( s1 );
+
+#if HAS_SHADOW
+sampler sShadowDepth						: register( s2 );
+#endif
+
+const float3 g_vecViewOrigin				: register( c0 );
+const float3 g_vecLightVec_Forward			: register( c1 );
+
+const float4x3 g_matOrtho[2]				: register( c2 );
+const float4 g_vecUVTransform[2]			: register( c8 );
+const float3 g_vecSlopeData[2]				: register( c10 );
+const float4 g_vecFilterConfig_A[2]			: register( c12 );
+const float4 g_vecFilterConfig_B[2]			: register( c14 );
+
+const float3 g_light_diffuse				: register( c16 );
+const float3 g_light_ambient_high			: register( c17 );
+const float3 g_light_ambient_low_half		: register( c18 );
+
+const float3 g_light_shadow_threshold		: register( c19 );
+
+//const float3 cAmbientCube[6]				: register( c20 );
+
+struct PS_INPUT
+{
+	float2 vTexCoord				: TEXCOORD0;
+
+	float3 vecWorldRay				: TEXCOORD1;
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+// Better suited to Pixel shader models, 11 instructions in pixel shader
+/*float3 PixelShaderAmbientLight( const float3 worldNormal, const float3 cAmbientCube[6] )
+{
+	float3 linearColor, nSquared = worldNormal * worldNormal;
+	float3 isNegative = ( worldNormal < 0.0 );
+	float3 isPositive = 1-isNegative;
+
+	isNegative *= nSquared;
+	isPositive *= nSquared;
+
+	linearColor = isPositive.x * cAmbientCube[0] + isNegative.x * cAmbientCube[1] +
+				  isPositive.y * cAmbientCube[2] + isNegative.y * cAmbientCube[3] +
+				  isPositive.z * cAmbientCube[4] + isNegative.z * cAmbientCube[5];
+
+	return linearColor;
+}*/
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out = (PS_OUTPUT)0;
+
+	float flDepth = tex2D( sDepth, In.vTexCoord ).x;
+
+	clip( flDepth - 0.1f );
+
+	float phong_exp;
+	bool half_lambert, litface;
+
+	float4 flNormalCtrl = tex2D( sNormals, In.vTexCoord );
+	float3 flNormal = normalize( flNormalCtrl.xyz * 2.0f - 1.0f );
+	UnpackLightingControls( flNormalCtrl.a, phong_exp, half_lambert, litface );
+
+	float3 flLitNormal = lerp( 1, dot( flNormal, g_vecLightVec_Forward ), litface ) * flNormal;
+
+	float flSpecular = max( 0, dot( normalize( -In.vecWorldRay + g_vecLightVec_Forward ), flLitNormal ) );
+	flSpecular = pow( flSpecular, phong_exp ) * dot( -In.vecWorldRay, flLitNormal );
+
+	float viewFwdDot = dot( g_vecLightVec_Forward.xyz, flLitNormal );
+	float litDot = lerp( viewFwdDot, viewFwdDot * 0.5f + 0.5f, half_lambert );
+
+	float3 diffuse = g_light_diffuse;
+	// Match color from vrad, makes shadows look sharper (better transition), however does not really look nice
+	//float3 diffuse = PixelShaderAmbientLight( normalize(g_vecLightVec_Forward.xyz), cAmbientCube ); 
+	float lightAmount = saturate( litDot );
+	float3 ambient = lerp( g_light_ambient_low_half, g_light_ambient_high, viewFwdDot );
+	
+#if HAS_SHADOW
+	if ( flDepth < DEPTH_RECONSTRUCTION_LIMIT )
+	{
+		float3 worldPos = g_vecViewOrigin + In.vecWorldRay * flDepth;
+
+		float shadowMult = PerformCascadedShadow( sShadowDepth, worldPos, g_matOrtho, g_vecUVTransform, g_vecSlopeData,
+									g_vecFilterConfig_A, g_vecFilterConfig_B, flLitNormal, viewFwdDot );
+
+		if( shadowMult >= g_light_shadow_threshold.x )
+		{
+			Out.vColor_0 = WriteLighting( float4(0,0,0,0) );
+			return Out;
+		}
+#if 1
+		// fixes self shadowing for half lambertian, but, i don't like it!
+		lightAmount *= max( shadowMult, (1.0f - saturate( viewFwdDot )) * half_lambert );
+#else
+		lightAmount *= shadowMult;
+#endif
+	}
+#endif
+
+	float4 lighting = float4( lerp( ambient, diffuse * ( litDot ), lightAmount ), flSpecular * lightAmount );
+	//float4 lighting = float4( lerp( ambient, diffuse, lightAmount ), lightAmount );
+	
+	Out.vColor_0 = WriteLighting( lighting );
+
+	return Out;
+}

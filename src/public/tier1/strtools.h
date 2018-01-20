@@ -180,7 +180,7 @@ inline bool V_isspace(int c)
 //
 // This means the last parameter can usually be a sizeof() of a string.
 void V_strncpy( char *pDest, const char *pSrc, int maxLen );
-int V_snprintf( char *pDest, int destLen, const char *pFormat, ... ) FMTFUNCTION( 3, 4 );
+FMTFUNCTION( 3, 4 ) int V_snprintf( char *pDest, int destLen, const char *pFormat, ... );
 void V_wcsncpy( wchar_t *pDest, wchar_t const *pSrc, int maxLenInBytes );
 int V_snwprintf( wchar_t *pDest, int destLen, const wchar_t *pFormat, ... );
 

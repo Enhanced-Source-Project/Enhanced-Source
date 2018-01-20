@@ -1,0 +1,28 @@
+
+#include "common_vs_fxc.h"
+#include "common_deferred_fxc.h"
+
+
+struct VS_INPUT
+{
+	float3 vPos						: POSITION;
+	float3 vTangent_s				: TANGENT;
+};
+
+
+struct VS_OUTPUT
+{
+	float4 vProjPos					: POSITION;
+	float3 vWorldPos				: TEXCOORD0;
+};
+
+
+VS_OUTPUT main( const VS_INPUT In )
+{
+	VS_OUTPUT Out;
+
+	Out.vProjPos = float4( In.vPos.xyz, 1 );
+	Out.vWorldPos = In.vTangent_s;
+
+	return Out;
+}

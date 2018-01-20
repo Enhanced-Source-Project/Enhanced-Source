@@ -316,7 +316,7 @@ inline ButtonCode_t ButtonCodeToJoystickButtonCode( ButtonCode_t code, int nDesi
 	if ( !IsJoystickCode( code ) || nDesiredJoystick == 0 )
 		return code;
 
-	nDesiredJoystick = clamp( nDesiredJoystick, 0, MAX_JOYSTICKS - 1 );
+	nDesiredJoystick = Clamp( nDesiredJoystick, 0, MAX_JOYSTICKS - 1 );
 
 	code = GetBaseButtonCode( code );
 

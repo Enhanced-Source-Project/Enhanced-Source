@@ -24,6 +24,7 @@ public:
 	const CHudTextureHandle& operator=( const CHudTexture *t )
 	{
 		m_pValue = (CHudTexture *)t;
+		return *this;
 	}
 
 	void Set( CHudTexture *t )

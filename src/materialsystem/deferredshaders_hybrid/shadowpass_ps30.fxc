@@ -1,0 +1,148 @@
+
+// STATIC:		"ALPHATEST"				"0..1"
+// STATIC:		"MULTITEXTURE"			"0..2"
+
+// DYNAMIC:		"SHADOW_MODE"			"0..2"
+// DYNAMIC:		"RADIOSITY"				"0..1"
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+
+#if ALPHATEST || RADIOSITY
+sampler sAlbedo							: register( s0 );
+#if MULTITEXTURE != 0
+sampler sAlbedo2						: register( s1 );
+#if MULTITEXTURE == 2
+sampler sAlbedo3						: register( s2 );
+sampler sAlbedo4						: register( s3 );
+#endif
+#endif
+#endif
+
+#if MULTITEXTURE == 2
+sampler SpecSampler1					: register( s10 );	// Spec map 1
+sampler SpecSampler2					: register( s11 );	// Spec map 2
+sampler SpecSampler3					: register( s12 );	// Spec map 3
+sampler SpecSampler4					: register( s13 );	// Spec map 4
+#endif // MULTITEXTURE
+
+#if ALPHATEST
+const float g_flAlphaRef				: register( c0 );
+#endif
+
+
+struct PS_INPUT
+{
+#if MULTITEXTURE == 2
+	float4 vTexCoord				: TEXCOORD0;
+	float4 vTexCoord2				: TEXCOORD4;
+#else
+	float2 vTexCoord				: TEXCOORD0;
+#endif 
+
+#if SHADOWMAPPING_USE_COLOR
+#	if SHADOW_MODE == DEFERRED_SHADOW_MODE_PROJECTED
+	float2 flProjZW					: TEXCOORD1;
+#	else
+	float flDepth					: TEXCOORD1;
+#	endif
+#endif
+
+#if SHADOW_MODE == DEFERRED_SHADOW_MODE_DPSM
+	float flBack					: TEXCOORD2;
+#endif
+
+#if RADIOSITY
+	float3 vecNormal				: TEXCOORD3;
+#endif
+
+#if MULTITEXTURE == 1
+	float4 vColor_0					: COLOR0;
+#elif MULTITEXTURE == 2
+	float3 vAlphaBlend				: TEXCOORD5;
+	float4 vColorBlend1				: COLOR0;
+	float4 vColorBlend2				: COLOR1;
+	float4 vColorBlend3				: TEXCOORD6;
+	float3 vColorBlend4				: TEXCOORD7;
+#endif
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+#if RADIOSITY
+	float4 vColor_1				:	COLOR1;
+	float4 vColor_2				:	COLOR2;
+#endif
+};
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+#if SHADOW_MODE == DEFERRED_SHADOW_MODE_DPSM
+	clip( In.flBack );
+#endif
+
+#if DEFCFG_BILATERAL_DEPTH_TEST
+	clip( ShadowColor_Raw( sCameraDepth, In.vCameraDepthTexPos.xyz ) == 0  ); 
+#endif
+
+	PS_OUTPUT Out;
+
+#if RADIOSITY
+	float4 albedo = tex2D( sAlbedo, In.vTexCoord );
+
+#if MULTITEXTURE == 1
+	float4 albedo2 = tex2D( sAlbedo2, In.vTexCoord );
+	float flBlendfactor = In.vColor_0.w;
+	albedo = lerp( albedo, albedo2, flBlendfactor );
+#elif MULTITEXTURE == 2
+	float remaining = 1;
+	float4 flBlendFactors;
+	
+	float4	color1 = tex2D( sAlbedo, In.vTexCoord.xy ) * float4( In.vColorBlend1.rgb, 1.0 );
+	float4	color2 = tex2D( sAlbedo2, In.vTexCoord.zw ) * float4( In.vColorBlend2.rgb, 1.0 );
+	float4	color3 = tex2D( sAlbedo3, In.vTexCoord2.xy ) * float4( In.vColorBlend3.rgb, 1.0 );
+	float4	color4 = tex2D( sAlbedo4, In.vTexCoord2.zw ) * float4( In.vColorBlend4.rgb, 1.0 );
+	
+	float4   spec1 = tex2D( SpecSampler1, In.vTexCoord.xy ); 
+	float4   spec2 = tex2D( SpecSampler2, In.vTexCoord.zw );
+	float4   spec3 = tex2D( SpecSampler3, In.vTexCoord2.xy );
+	float4   spec4 = tex2D( SpecSampler4, In.vTexCoord2.zw );
+	
+	flBlendFactors.x = ComputeMultiBlendFactor( spec1.a, color1.a, In.vColorBlend1.a, In.vAlphaBlend.r, remaining );
+	flBlendFactors.y = ComputeMultiBlendFactor( spec2.a, color2.a, In.vColorBlend2.a, In.vAlphaBlend.g, remaining );
+	flBlendFactors.z = ComputeMultiBlendFactor( spec3.a, color3.a, In.vColorBlend3.a, In.vAlphaBlend.b, remaining );
+	flBlendFactors.w = remaining;
+
+	albedo = albedo * flBlendFactors.x
+		+ tex2D( sAlbedo2, In.vTexCoord ) * flBlendFactors.y
+		+ tex2D( sAlbedo3, In.vTexCoord ) * flBlendFactors.z
+		+ tex2D( sAlbedo4, In.vTexCoord ) * flBlendFactors.w;
+#endif
+
+	Out.vColor_1 = albedo;
+	Out.vColor_2 = float4( In.vecNormal * 0.5f + 0.5f, 0 );
+#endif
+
+#if ALPHATEST
+#if RADIOSITY
+	float alpha = albedo.a;
+#else
+	float alpha = tex2D( sAlbedo, In.vTexCoord ).a;
+#endif
+	clip( alpha - g_flAlphaRef );
+#endif
+
+#if SHADOWMAPPING_USE_COLOR
+#	if SHADOW_MODE == DEFERRED_SHADOW_MODE_PROJECTED
+	float depth = In.flProjZW.x / In.flProjZW.y;
+	Out.vColor_0 = float4( depth.xxx, 1 );
+#	else
+	Out.vColor_0 = float4( In.flDepth.xxx, 1 );
+#	endif
+#else
+	Out.vColor_0 = float4( 1, 1, 1, 1 );
+#endif
+	return Out;
+}

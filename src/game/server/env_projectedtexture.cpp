@@ -35,6 +35,30 @@ BEGIN_DATADESC( CEnvProjectedTexture )
 	DEFINE_KEYFIELD( m_flProjectionSize, FIELD_FLOAT, "projection_size" ),
 	DEFINE_KEYFIELD( m_flRotation, FIELD_FLOAT, "projection_rotation" ),
 
+	DEFINE_KEYFIELD( m_bUberlight, FIELD_BOOLEAN, "uberlight" ),
+	DEFINE_KEYFIELD( m_fNearEdge, FIELD_FLOAT, "uberlight_near" ),
+	DEFINE_KEYFIELD( m_fFarEdge, FIELD_FLOAT, "uberlight_far" ),
+	DEFINE_KEYFIELD( m_fCutOn, FIELD_FLOAT, "uberlight_cuton" ),
+	DEFINE_KEYFIELD( m_fCutOff, FIELD_FLOAT, "uberlight_cutoff" ),
+	DEFINE_KEYFIELD( m_fShearx, FIELD_FLOAT, "uberlight_shearx" ),
+	DEFINE_KEYFIELD( m_fSheary, FIELD_FLOAT, "uberlight_sheary" ),
+	DEFINE_KEYFIELD( m_fWidth, FIELD_FLOAT, "uberlight_width" ),
+	DEFINE_KEYFIELD( m_fWedge, FIELD_FLOAT, "uberlight_wedge" ),
+	DEFINE_KEYFIELD( m_fHeight, FIELD_FLOAT, "uberlight_height" ),
+	DEFINE_KEYFIELD( m_fHedge, FIELD_FLOAT, "uberlight_hedge" ),
+	DEFINE_KEYFIELD( m_fRoundness, FIELD_FLOAT, "uberlight_roundness" ),
+
+	DEFINE_KEYFIELD( m_bVolumetric, FIELD_BOOLEAN, "volumetric" ),
+	DEFINE_KEYFIELD( m_flNoiseStrength, FIELD_FLOAT, "noise_strength" ),
+	DEFINE_KEYFIELD( m_nNumPlanes, FIELD_INTEGER, "num_planes" ),
+	DEFINE_KEYFIELD( m_flPlaneOffset, FIELD_FLOAT, "plane_offset" ),
+	DEFINE_KEYFIELD( m_flVolumetricIntensity, FIELD_FLOAT, "volumetric_intensity" ),
+
+	DEFINE_KEYFIELD( m_flAttenConst, FIELD_FLOAT, "atten_c" ),
+	DEFINE_KEYFIELD( m_flAttenLinear, FIELD_FLOAT, "atten_l" ),
+	DEFINE_KEYFIELD( m_flAttenQuadratic, FIELD_FLOAT, "atten_q" ),
+	DEFINE_KEYFIELD( m_flAttenFarZ, FIELD_FLOAT, "atten_f" ),
+
 	DEFINE_INPUTFUNC( FIELD_VOID, "TurnOn", InputTurnOn ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "TurnOff", InputTurnOff ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "AlwaysUpdateOn", InputAlwaysUpdateOn ),
@@ -75,6 +99,30 @@ IMPLEMENT_SERVERCLASS_ST( CEnvProjectedTexture, DT_EnvProjectedTexture )
 	SendPropInt( SENDINFO( m_nShadowQuality ), 1, SPROP_UNSIGNED ),  // Just one bit for now
 	SendPropFloat( SENDINFO( m_flProjectionSize ) ),
 	SendPropFloat( SENDINFO( m_flRotation ) ),
+
+	SendPropBool( SENDINFO( m_bUberlight ) ),
+	SendPropFloat( SENDINFO( m_fNearEdge ) ),
+	SendPropFloat( SENDINFO( m_fFarEdge ) ),
+	SendPropFloat( SENDINFO( m_fCutOn ) ),
+	SendPropFloat( SENDINFO( m_fCutOff ) ),
+	SendPropFloat( SENDINFO( m_fShearx ) ),
+	SendPropFloat( SENDINFO( m_fSheary ) ),
+	SendPropFloat( SENDINFO( m_fWidth ) ),
+	SendPropFloat( SENDINFO( m_fWedge ) ),
+	SendPropFloat( SENDINFO( m_fHeight ) ),
+	SendPropFloat( SENDINFO( m_fHedge ) ),
+	SendPropFloat( SENDINFO( m_fRoundness ) ),
+
+	SendPropBool( SENDINFO( m_bVolumetric ) ),
+	SendPropFloat( SENDINFO( m_flNoiseStrength ) ),
+	SendPropInt( SENDINFO( m_nNumPlanes ) ),
+	SendPropFloat( SENDINFO( m_flPlaneOffset ) ),
+	SendPropFloat( SENDINFO( m_flVolumetricIntensity ) ),
+
+	SendPropFloat( SENDINFO( m_flAttenConst ) ),
+	SendPropFloat( SENDINFO( m_flAttenLinear ) ),
+	SendPropFloat( SENDINFO( m_flAttenQuadratic ) ),
+	SendPropFloat( SENDINFO( m_flAttenFarZ ) ),
 END_SEND_TABLE()
 
 //-----------------------------------------------------------------------------

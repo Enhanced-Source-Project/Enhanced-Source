@@ -47,17 +47,6 @@ const wchar_t *GetStringForIndex( int index );
 #endif
 static bool g_bPermitDirectSoundPrecache = false;
 
-template< class T >
-static FORCEINLINE T Clamp( T const &val, T const &minVal, T const &maxVal )
-{
-	if ( val < minVal )
-		return minVal;
-	else if ( val > maxVal )
-		return maxVal;
-	else
-		return val;
-}
-
 #if !defined( CLIENT_DLL )
 
 static ConVar cc_norepeat( "cc_norepeat", "5", 0, "In multiplayer games, don't repeat captions more often than this many seconds." );

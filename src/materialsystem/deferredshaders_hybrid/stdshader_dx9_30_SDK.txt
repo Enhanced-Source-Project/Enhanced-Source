@@ -1,0 +1,25 @@
+//
+// vs 3.0   ps 3.0   shaders collection
+//
+//  These shaders are forced to compile as shader model 3.0
+//  using the new compiler.
+//	    _ps30.vcs
+//	    _vs30.vcs
+//
+
+vertexlit_and_unlit_generic_vs30.fxc
+vertexlit_and_unlit_generic_ps30.fxc
+
+vertexlit_and_unlit_generic_bump_vs30.fxc
+vertexlit_and_unlit_generic_bump_ps30.fxc
+
+phong_ps30.fxc
+
+multiblend_vs30.fxc
+multiblend_ps30.fxc
+
+lightmappedgeneric_ps30.fxc
+lightmappedgeneric_vs30.fxc
+
+flora_ps30.fxc
+flora_vs30.fxc

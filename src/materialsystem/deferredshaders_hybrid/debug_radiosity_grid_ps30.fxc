@@ -1,0 +1,32 @@
+
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+
+
+struct PS_INPUT
+{
+	float2 vTexCoord_0				: TEXCOORD0;
+};
+
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+sampler sRadiosityBuffer					: register( s0 );
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out;
+
+	float4 sample = tex2D( sRadiosityBuffer, In.vTexCoord_0 );
+
+	clip( ( sample.r + sample.g + sample.b ) - 0.01f );
+
+	Out.vColor_0 = sample;
+
+	return Out;
+}

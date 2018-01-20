@@ -1,0 +1,78 @@
+
+
+// DYNAMIC:		"RADIOSITY"			"0..1"
+// DYNAMIC:		"PIXELFOGTYPE"		"0..1"
+
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+
+sampler sDepth							: register( s0 );
+sampler sAlbedo							: register( s1 );
+sampler sLighting						: register( s2 );
+sampler sRadiosity						: register( s3 );
+
+const float3 g_vecViewOrigin				: register( c0 );
+const float3 g_vecRadiosityOrigin			: register( c1 );
+const float3 g_vecRadiosityOrigin_Far		: register( c2 );
+const float g_flRadiositySettings			: register( c3 );
+
+const float4 g_vecFogParams				: register( c4 );
+
+struct PS_INPUT
+{
+	float2 vTexCoord				: TEXCOORD0;
+	float3 vecWorldRay				: TEXCOORD1;
+};
+
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out;
+
+	float flDepth = min( DEPTH_RECONSTRUCTION_LIMIT, tex2D( sDepth, In.vTexCoord ).x );
+
+	float4 flAlbedoSample = tex2D( sAlbedo, In.vTexCoord );
+	float4 flLighting = tex2D( sLighting, In.vTexCoord );
+	float3 flSpecularLighting = (float3)0;
+
+	//clip( flDepth - 0.1f );
+	float flSkyAmt = step( flDepth, 0.001f );
+
+	float3 worldPos = g_vecViewOrigin + In.vecWorldRay * flDepth;
+
+#if RADIOSITY
+	flLighting.xyz += DoRadiosity( worldPos, sRadiosity,
+		g_vecRadiosityOrigin, g_vecRadiosityOrigin_Far, g_flRadiositySettings );
+#endif
+
+	flLighting = lerp( flLighting, float4( 1, 1, 1, 0 ), flSkyAmt );
+
+	float flLightScale =
+#if DEFCFG_USE_SRGB_CONVERSION
+		LINEAR_LIGHT_SCALE;
+#else
+		GAMMA_LIGHT_SCALE;
+#endif
+
+	Out.vColor_0.w = 0;
+	Out.vColor_0.xyz = ( ( flAlbedoSample.rgb + flLighting.w * 1.0f ) * flLighting.xyz
+		+ flSpecularLighting ) * flLightScale;
+
+#if PIXELFOGTYPE == 0
+	float fogAmt = CalcPixelFogFactor( PIXELFOGTYPE, g_vecFogParams, g_vecViewOrigin, worldPos, 0 );
+
+	fogAmt = lerp( fogAmt, 0, flSkyAmt );
+
+	Out.vColor_0.xyz = lerp( Out.vColor_0.xyz, g_LinearFogColor, fogAmt );
+#endif
+
+	return Out;
+}

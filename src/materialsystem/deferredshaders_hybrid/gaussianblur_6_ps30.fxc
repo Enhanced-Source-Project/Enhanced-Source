@@ -1,0 +1,45 @@
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+static const float gauss6[6] =
+{
+	0.034702,
+	0.150834,
+	0.314465,
+	0.314465,
+	0.150834,
+	0.034702,
+};
+
+sampler sTex							: register( s0 );
+
+const float2 g_vecTexelSize				: register( c0 );
+
+
+struct PS_INPUT
+{
+	float2 vTexCoord			: TEXCOORD0;
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	float3 col = 0;
+	float2 uv = In.vTexCoord - g_vecTexelSize * 2.5f;
+
+	for ( int i = 0; i < 6; i++ )
+	{
+		col += tex2D( sTex, uv ).rgb * gauss6[ i ];
+
+		uv += g_vecTexelSize;
+	}
+
+	PS_OUTPUT Out;
+	Out.vColor_0 = float4( col, 1 );
+	return Out;
+}

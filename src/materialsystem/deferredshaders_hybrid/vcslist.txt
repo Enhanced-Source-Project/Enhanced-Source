@@ -1,0 +1,2 @@
+..\..\..\game\platform\shaders\fxc\water_ps30.vcs
+..\..\..\game\platform\shaders\fxc\water_vs30.vcs

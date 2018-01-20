@@ -1,0 +1,33 @@
+
+#include "common_vs_fxc.h"
+#include "common_deferred_fxc.h"
+
+const float3 g_vecOrigin					: register( SHADER_SPECIFIC_CONST_0 );
+const float3 g_vecForward					: register( SHADER_SPECIFIC_CONST_1 );
+
+const float g_flDepthScale					: register( SHADER_SPECIFIC_CONST_2 );
+
+
+struct VS_INPUT
+{
+	float3 vPos						: POSITION;
+};
+
+struct VS_OUTPUT
+{
+	float4 vProjPos					: POSITION;
+
+	float depth						: TEXCOORD0;
+};
+
+VS_OUTPUT main( const VS_INPUT In )
+{
+	VS_OUTPUT Out;
+
+	float3 worldPos = mul( float4( In.vPos, 1 ), cModel[0] );
+
+	Out.vProjPos = mul( float4( worldPos, 1 ), cViewProj );
+	Out.depth = WriteDepth( worldPos, g_vecOrigin, g_vecForward, g_flDepthScale );
+
+	return Out;
+}

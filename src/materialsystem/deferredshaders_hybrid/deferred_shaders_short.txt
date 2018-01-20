@@ -1,0 +1,12 @@
+gbuffer_vs30.fxc
+gbuffer_ps30.fxc
+gbuffer_defshading_ps30.fxc
+
+screenspace_shading_ps30.fxc
+screenspace_combine_ps30.fxc
+
+radiosity_gen_global_ps30.fxc
+radiosity_gen_vs30.fxc
+radiosity_propagate_ps30.fxc
+radiosity_propagate_vs30.fxc
+radiosity_blend_ps30.fxc

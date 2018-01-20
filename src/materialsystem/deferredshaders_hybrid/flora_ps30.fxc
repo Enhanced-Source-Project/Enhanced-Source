@@ -1,0 +1,72 @@
+//========== Copyright (c) Valve Corporation, All rights reserved. ==========//
+// STATIC: "CONVERT_TO_SRGB" "0..1"	[ps20b][= g_pHardwareConfig->NeedsShaderSRGBConversion()] [PC]
+// STATIC: "CONVERT_TO_SRGB" "0..0"	[= 0] [XBOX]
+// STATIC: "VERTEXCOLOR"				"0..1"
+
+#include "common_ps_fxc.h" 
+#include "common_deferred_fxc.h"
+#include "shader_constant_register_map.h"
+#include "common_fog_ps_supportsvertexfog_fxc.h"
+
+sampler BaseSampler1					: register( s0 );	// Base map 1
+
+sampler sLightAccum		: register( s13 );
+sampler sLightAccum2	: register( s14 );
+const float2 g_vecFullScreenTexel		: register( c3 );
+
+const float4 g_DiffuseModulation				: register( c1 );
+
+const float4 g_ShaderControls					: register( c12 );
+
+#define g_fInverseBlendTintByBaseAlpha		g_ShaderControls.x
+#define g_fWriteDepthToAlpha				g_ShaderControls.y
+//#define g_fWriteWaterFogToDestAlpha		g_ShaderControls.z
+#define g_fVertexAlpha						g_ShaderControls.w
+
+const float4 g_EyePos_BaseTextureTranslucency	: register( c20 );
+const float4 g_FogParams						: register( c21 );
+
+struct PS_INPUT
+{
+	float4 vProjPos							: POSITION;	
+	float2 vBaseTexCoord					: TEXCOORD0;	// xy = blend 1 coord
+	float4 worldPos_projPosZ				: TEXCOORD1;
+
+#if ( !HARDWAREFOGBLEND && !DOPIXELFOG )
+	float4 worldVertToEyeVector_fogFactorW : TEXCOORD3;
+#endif 
+
+	float4 color							: TEXCOORD6;
+
+	float2 vScreenPos				: VPOS;
+};
+
+// Main ===========================================================================================
+float4 main( PS_INPUT i ) : COLOR
+{
+	float4 result = tex2Dsrgb( BaseSampler1, i.vBaseTexCoord.xy );
+
+	float3 diffuseLighting = i.color.rgb;
+	diffuseLighting *= lerp( float3( 1.0f, 1.0f, 1.0f ), g_DiffuseModulation.rgb, saturate( result.a + g_fInverseBlendTintByBaseAlpha ) );
+
+	result.rgb *= diffuseLighting; //i.color.rgb;
+	result.a *= g_DiffuseModulation.a;
+
+	float2 screenPos = ( i.vScreenPos + 0.5f ) * g_vecFullScreenTexel;
+	float4 flLighting = ReadLighting( tex2D( sLightAccum, screenPos ) );
+	float4 flLighting2 = ReadLighting( tex2D( sLightAccum2, screenPos ) );
+	
+	float defint = length( flLighting );
+	if( defint > 0 )
+		result.rgb = result.rgb * flLighting;
+	result.rgb += flLighting2.rgb;
+	
+	float flVertexFogFactor = 0.0f;
+	#if ( !HARDWAREFOGBLEND && !DOPIXELFOG )
+	{
+		flVertexFogFactor = i.worldVertToEyeVector_fogFactorW.w;
+	}
+	#endif 
+	float fogFactor = CalcPixelFogFactorSupportsVertexFog( PIXELFOGTYPE, g_FogParams, g_EyePos_BaseTextureTranslucency.xyz, i.worldPos_projPosZ.xyz, i.worldPos_projPosZ.w, flVertexFogFactor );
+	return FinalOutput( float4( result.rgb, result.a ), fogFactor, PIXELFOGTYPE, TONEMAP_SCALE_LINEAR, g_fWriteDepthToAlpha, i.worldPos_projPosZ.w );
+}

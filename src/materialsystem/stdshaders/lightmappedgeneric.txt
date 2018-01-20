@@ -1,0 +1,4 @@
+lightmappedgeneric_ps2x.fxc
+// lightmappedgeneric_vs20.fxc
+
+// lightmappedpaint_ps2x.fxc

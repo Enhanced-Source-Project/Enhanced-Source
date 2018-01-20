@@ -7,6 +7,7 @@ $Project "client"
 	"game\client\client_hl2.vpc"		[$HL2]
 	"game\client\client_hl2_template.vpc"		[$HL2_TEMPLATE]
 	"game\client\client_episodic.vpc"		[$HL2_EPISODIC]
+	"game\client\client_deferred_hybrid.vpc"		[$DEFERRED_HYBRID]
 }
 
 $Project "server"
@@ -18,6 +19,7 @@ $Project "server"
 	"game\server\server_hl2.vpc"		[$HL2]
 	"game\server\server_hl2_template.vpc"		[$HL2_TEMPLATE]
 	"game\server\server_episodic.vpc"		[$HL2_EPISODIC]
+	"game\server\server_deferred_hybrid.vpc"		[$DEFERRED_HYBRID]
 }
 
 
@@ -35,4 +37,5 @@ $Project "game_shader"
 {
 	"materialsystem\stdshaders\game_shader_dx9_portal.vpc"	[$PORTAL]
 	"materialsystem\deferredshaders\game_shader_generic_deferred.vpc"	[$DEFERRED]
+	"materialsystem\deferredshaders_hybrid\game_shader_dx9_deferred_hybrid.vpc"	[$DEFERRED_HYBRID]
 }

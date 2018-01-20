@@ -1,0 +1,288 @@
+
+// STATIC:		"MODEL"					"0..1"
+// STATIC:		"MORPHING_VTEX"			"0..1"
+// STATIC:		"MULTITEXTURE"			"0..2"
+// STATIC:		"TREESWAY"				"0..2"
+
+// DYNAMIC:		"COMPRESSED_VERTS"		"0..1"
+// DYNAMIC:		"SKINNING"				"0..1"
+// DYNAMIC:		"MORPHING"				"0..1"
+
+// DYNAMIC:		"SHADOW_MODE"			"0..2"
+// DYNAMIC:		"RADIOSITY"				"0..1"
+
+#include "common_vs_fxc.h"
+#include "common_deferred_fxc.h"
+
+
+static const bool g_bSkinning		= SKINNING ? true : false;
+
+
+#if MODEL
+
+const float3 cMorphTargetTextureDim			: register( SHADER_SPECIFIC_CONST_10 );
+const float4 cMorphSubrect					: register( SHADER_SPECIFIC_CONST_11 );
+sampler2D morphSampler						: register( D3DVERTEXTEXTURESAMPLER0, s0 );
+
+#endif
+
+#if SHADOW_MODE != DEFERRED_SHADOW_MODE_DPSM
+
+const float3 g_vecShadowForward				: register( SHADER_SPECIFIC_CONST_0 );
+const float4 g_vecSlopeData					: register( SHADER_SPECIFIC_CONST_1 );
+const float3 g_vecOrigin					: register( SHADER_SPECIFIC_CONST_2 );
+
+#define SLOPESCALE_MIN g_vecSlopeData.x
+#define SLOPESCALE_MAX g_vecSlopeData.y
+#define PROJECTION_DEPTH g_vecSlopeData.w
+
+#endif
+
+#if SHADOWMAPPING_USE_COLOR
+
+const float4x3 g_matView			: register( SHADER_SPECIFIC_CONST_7 );
+
+#endif
+
+#if MULTITEXTURE == 2
+
+const float4 g_vRotations							: register( SHADER_SPECIFIC_CONST_12 );
+const float4 g_vScales								: register( SHADER_SPECIFIC_CONST_13 );
+
+#endif // MULTITEXTURE
+
+#if ( TREESWAY )
+	const float4 flTreeSwayParams1			: register( SHADER_SPECIFIC_CONST_3 );
+	const float4 flTreeSwayParams2			: register( SHADER_SPECIFIC_CONST_4 );
+	const float4 flTreeSwayParams3			: register( SHADER_SPECIFIC_CONST_5 );
+	const float4 flTreeSwayParams4			: register( SHADER_SPECIFIC_CONST_6 );
+	const float4 flTreeSwayParams5			: register( SHADER_SPECIFIC_CONST_14 );
+	
+	#define g_flFastSwaySpeedScale flTreeSwayParams1.x
+	#define g_flScrumbleFalloffCurve flTreeSwayParams1.y
+	#define g_flSwayFalloffCurve flTreeSwayParams1.z
+	#define g_flScrumbleSpeed flTreeSwayParams1.w
+	
+	#define g_flTime flTreeSwayParams2.y
+	#define g_vWindDir flTreeSwayParams2.zw
+
+	#define g_flHeight flTreeSwayParams3.x
+	#define g_flStartHeight flTreeSwayParams3.y
+	#define g_flRadius flTreeSwayParams3.z
+	#define g_flStartRadius flTreeSwayParams3.w
+
+	#define g_flSwaySpeed flTreeSwayParams4.x
+	#define g_flSwayIntensity flTreeSwayParams4.y
+	#define g_flScrumbleWaveCount flTreeSwayParams4.z
+	#define g_flScrumbleIntensity flTreeSwayParams4.w
+
+	#define g_flWindSpeedLerpStart flTreeSwayParams5.x
+	#define g_flWindSpeedLerpEnd flTreeSwayParams5.y
+	
+	#include "tree_sway.h"
+#endif
+
+struct VS_INPUT
+{
+#if MODEL
+	float4 vPos						: POSITION;
+	float4 vNormal					: NORMAL;
+#else
+	float3 vPos						: POSITION;
+	float3 vNormal					: NORMAL;
+#endif
+
+	float2 vTexCoord_0				: TEXCOORD0;
+
+#if MODEL
+
+	float4 vBoneWeights				: BLENDWEIGHT;
+	float4 vBoneIndices				: BLENDINDICES;
+
+	float4 vTexCoord2				: TEXCOORD2;
+	float4 vPosFlex					: POSITION1;
+	float4 vNormalFlex				: NORMAL1;
+	float vVertexID					: POSITION2;
+
+#endif
+
+#if MULTITEXTURE == 1
+	float4 vColor_0					: COLOR0;
+#elif MULTITEXTURE == 2
+	float4 vAlphaBlend					: TEXCOORD3;
+	float4 vColorBlend1					: TEXCOORD4;
+	float4 vColorBlend2					: TEXCOORD5;
+	float4 vColorBlend3					: TEXCOORD6;
+	float4 vColorBlend4					: TEXCOORD7;
+#endif
+};
+
+
+struct VS_OUTPUT
+{
+	float4 vProjPos					: POSITION;
+	
+#if MULTITEXTURE == 2
+	float4 vTexCoord				: TEXCOORD0;
+	float4 vTexCoord2				: TEXCOORD4;
+#else
+	float2 vTexCoord				: TEXCOORD0;
+#endif 
+
+#if SHADOWMAPPING_USE_COLOR
+#	if SHADOW_MODE == DEFERRED_SHADOW_MODE_PROJECTED
+	float2 flProjZW					: TEXCOORD1;
+#	else
+	float flDepth					: TEXCOORD1;
+#	endif
+#endif
+
+#if SHADOW_MODE == DEFERRED_SHADOW_MODE_DPSM
+	float flBack					: TEXCOORD2;
+#endif
+
+#if RADIOSITY
+	float3 vecNormal				: TEXCOORD3;
+#endif
+
+#if MULTITEXTURE == 1
+	float4 vColor_0					: COLOR0;
+#elif MULTITEXTURE == 2
+	float3 vAlphaBlend					: TEXCOORD5;
+	float4 vColorBlend1					: COLOR0;
+	float4 vColorBlend2					: COLOR1;
+	float4 vColorBlend3					: TEXCOORD6;
+	float3 vColorBlend4					: TEXCOORD7;
+#endif
+};
+
+
+VS_OUTPUT main( const VS_INPUT In )
+{
+	VS_OUTPUT Out;
+	float3 worldPos;
+	float3 worldNormal;
+
+	// unpack stuff (model) &&
+	// morph (model) &&
+	// skin (model) ||
+	// xform to world (not model)
+
+#if MODEL
+	float4 vPos = In.vPos;
+	float3 vNormal = 0;
+
+	DecompressVertex_Normal( In.vNormal, vNormal );
+
+#if MORPHING
+#if !MORPHING_VTEX
+	ApplyMorph( In.vPosFlex, In.vNormalFlex, vPos.xyz, vNormal );
+#else
+	ApplyMorph( morphSampler, cMorphTargetTextureDim, cMorphSubrect,
+		In.vVertexID, In.vTexCoord2, vPos.xyz, vNormal );
+#endif
+#endif
+
+	#if ( TREESWAY )
+	{
+		vPos.xyz = ComputeTreeSway( vPos.xyz, g_flTime );
+	}
+	#endif
+
+	SkinPositionAndNormal( g_bSkinning, vPos, vNormal,
+		In.vBoneWeights, In.vBoneIndices,
+		worldPos, worldNormal );
+
+#else // MODEL
+	float3 vPos = In.vPos;
+	
+	#if ( TREESWAY )
+	{
+		vPos.xyz = ComputeTreeSway( vPos.xyz, g_flTime );
+	}
+	#endif
+
+	worldPos = mul( float4( vPos, 1 ), cModel[0] );
+	worldNormal = mul( In.vNormal, ( float3x3 )cModel[0] );
+
+#endif // NOT MODEL
+
+#if SHADOW_MODE == DEFERRED_SHADOW_MODE_ORTHO
+
+	float viewFwdDot = abs( dot( g_vecShadowForward, worldNormal ) );
+	worldPos += g_vecShadowForward * lerp( SLOPESCALE_MAX, SLOPESCALE_MIN, viewFwdDot );
+
+	Out.vProjPos = mul( float4( worldPos, 1 ), cViewProj );
+
+#elif SHADOW_MODE == DEFERRED_SHADOW_MODE_DPSM
+
+	float3 orthoPos = mul( float4( worldPos, 1 ), cViewProj ).xyz;
+
+	float dist = length( orthoPos );
+	orthoPos = orthoPos / dist;
+
+	dist += SHADOWMAPPINGTWEAK_DPSM_EPSILON;
+
+	Out.flBack = orthoPos.z;
+
+	Out.vProjPos.xy = orthoPos.xy / ( orthoPos.z + 1 );
+	Out.vProjPos.z = dist;
+	Out.vProjPos.w = 1;
+
+#else
+
+	float viewFwdDot = abs( dot( g_vecShadowForward, worldNormal ) );
+	worldPos += ( worldPos - g_vecOrigin ) * lerp( SLOPESCALE_MAX, SLOPESCALE_MIN, viewFwdDot );
+
+	Out.vProjPos = mul( float4( worldPos, 1 ), cViewProj );
+
+#endif
+
+#if MULTITEXTURE == 2
+	Out.vTexCoord.xy = ComputeTexCoord( In.vTexCoord_0, g_vRotations.x, g_vScales.x );
+	Out.vTexCoord.zw = ComputeTexCoord( In.vTexCoord_0, g_vRotations.y, g_vScales.y );
+	Out.vTexCoord2.xy = ComputeTexCoord( In.vTexCoord_0, g_vRotations.z, g_vScales.z );
+	Out.vTexCoord2.zw = ComputeTexCoord( In.vTexCoord_0, g_vRotations.w, g_vScales.w );
+#else
+	Out.vTexCoord = In.vTexCoord_0;
+#endif // MULTITEXTURE
+
+#if RADIOSITY
+	Out.vecNormal = worldNormal;
+#endif
+
+#if MULTITEXTURE == 1
+	Out.vColor_0 = In.vColor_0;
+#elif MULTITEXTURE == 2
+	Out.vColorBlend1 = In.vColorBlend1;
+	Out.vColorBlend2 = In.vColorBlend2;
+	Out.vColorBlend3 = In.vColorBlend3;
+	Out.vColorBlend4.xyz = In.vColorBlend4.xyz;
+	Out.vAlphaBlend.xyz = In.vAlphaBlend.xyz;
+#endif
+
+#if SHADOWMAPPING_USE_COLOR
+
+#if SHADOW_MODE == DEFERRED_SHADOW_MODE_ORTHO
+
+	//worldPos = mul4x3( float4( worldPos, 1 ), g_matView );
+	//Out.flDepth = -worldPos.z / PROJECTION_DEPTH;
+
+	float3 worldDelta = worldPos - g_vecOrigin;
+	float dotFwd = dot( g_vecShadowForward, worldDelta );
+	Out.flDepth = dotFwd * PROJECTION_DEPTH;
+
+#elif SHADOW_MODE == DEFERRED_SHADOW_MODE_DPSM
+
+	Out.flDepth = dist;
+
+#else
+
+	Out.flProjZW = Out.vProjPos.zw;
+
+#endif
+
+#endif
+
+	return Out;
+}

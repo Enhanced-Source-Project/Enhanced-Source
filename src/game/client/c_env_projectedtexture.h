@@ -83,7 +83,23 @@ private:
 	Vector	m_vecExtentsMin;
 	Vector	m_vecExtentsMax;
 
+	bool		m_bUberlight;
+	UberlightState_t uberlight;
+
+	bool m_bVolumetric;
+	float m_flNoiseStrength;
+	int m_nNumPlanes;
+	float m_flPlaneOffset;
+	float m_flVolumetricIntensity;
+
+	float m_flAttenConst;
+	float m_flAttenLinear;
+	float m_flAttenQuadratic;
+	float m_flAttenFarZ;
+
 	static float m_flVisibleBBoxMinHeight;
+
+	friend struct def_light_editor_t;
 };
 
 

@@ -1021,6 +1021,7 @@ FORCEINLINE fltx4 LoadAndConvertUint16SIMD( const uint16 *pInts )
 	SubFloat( retval, 1 ) = pInts[1];
 	SubFloat( retval, 2 ) = pInts[2];
 	SubFloat( retval, 3 ) = pInts[3];
+	return retval;
 }
 
 
@@ -2844,6 +2845,7 @@ FORCEINLINE fltx4 LoadAndConvertUint16SIMD( const uint16 *pInts )
 	SubFloat( retval, 1 ) = pInts[1];
 	SubFloat( retval, 2 ) = pInts[2];
 	SubFloat( retval, 3 ) = pInts[3];
+	return retval;
 #else
 	__m128i inA = _mm_loadl_epi64( (__m128i const*) pInts); // Load the lower 64 bits of the value pointed to by p into the lower 64 bits of the result, zeroing the upper 64 bits of the result.
 	inA = _mm_unpacklo_epi16( inA, _mm_setzero_si128() ); // unpack unsigned 16's to signed 32's

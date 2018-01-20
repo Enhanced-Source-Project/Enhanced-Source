@@ -1,0 +1,227 @@
+
+// STATIC:		"USEWORLDTRANSFORM"			"0..1"
+
+// DYNAMIC:		"NUM_SHADOWED_COOKIE"		"0..1"
+// DYNAMIC:		"NUM_SHADOWED"				"0..1"
+// DYNAMIC:		"VOLUME_LOD"				"0..4"
+// DYNAMIC:		"VOLUME_SAMPLES"			"0..100"
+
+// SKIP:		!$NUM_SHADOWED_COOKIE && !$NUM_SHADOWED
+// SKIP:		$NUM_SHADOWED_COOKIE && $NUM_SHADOWED
+
+#include "common_ps_fxc.h"
+#include "deferred_global_common.h"
+#include "common_lighting_fxc.h"
+
+#undef SHADOWMAPPING_METHOD
+
+#if SHADOWMAPPING_USE_COLOR
+	#define SHADOWMAPPING_METHOD SHADOWMAPPING_DEPTH_COLOR__RAW
+#else
+	#define SHADOWMAPPING_METHOD SHADOWMAPPING_DEPTH_STENCIL__RAW
+#endif
+
+#include "common_shadowmapping_fxc.h"
+
+/*
+	Spot lights:
+
+	position			x y z	radius			w
+	color diffuse		x y z	falloffpower	w
+	color ambient		x y z	cone outer		w
+	backward			x y z	cone inner		w
+
+	** shadowed or cookied **
+	shadowscale			x		cone radius		y
+
+	world2texture		x y z w
+						x y z w
+						x y z w
+						x y z w
+*/
+
+sampler sVolumeprepass						: register( s0 );
+sampler sDepth								: register( s1 );
+
+const float3 g_vecViewOrigin				: register( c0 );
+//const float4 g_vecShadowMappingTweaks_0		: register( c1 );
+//const float4 g_vecShadowMappingTweaks_1		: register( c2 );
+
+#if USEWORLDTRANSFORM
+const float3 g_vecFrustumCenter		: register( c3 );
+const float3 g_vecFrustumRight		: register( c4 );
+const float3 g_vecFrustumUp			: register( c5 );
+const float2 g_vecHalfScreenTexel		: register( c6 );
+#endif
+
+static const bool g_bDoSpotFalloff = NUM_SHADOWED == 1;
+
+sampler sMixedSampler[FREE_LIGHT_SAMPLERS]						: register( FIRST_LIGHT_SAMPLER_FXC );
+const float4 g_flMixedData[MAX_LIGHTDATA_CONSTANT_ROWS]			: register( FIRST_SHARED_LIGHTDATA_CONSTANT_FXC );
+
+
+struct PS_INPUT
+{
+#if USEWORLDTRANSFORM
+	float3 vecProjXYW				: TEXCOORD0;
+	float3 vecWorld					: TEXCOORD2;
+#else
+	float2 vTexCoord				: TEXCOORD0;
+	float3 vecWorldRay				: TEXCOORD1;
+#endif
+
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+float DoSpotLightVolum( const int index,
+	float3 vecWorld, const bool bDoSpotAttn )
+{
+	float3 normalizedLightVec = g_flMixedData[ index ].xyz - vecWorld;
+	float lightToWorldDist = length( normalizedLightVec );
+	normalizedLightVec = normalizedLightVec / lightToWorldDist;
+
+	float fade = 1.0f - saturate( lightToWorldDist / g_flMixedData[ index ].w );
+	fade = pow( fade, g_flMixedData[ index + 1 ].w );
+
+	if ( bDoSpotAttn )
+	{
+		float spotDot = dot( g_flMixedData[ index + 3 ].xyz, normalizedLightVec );
+		fade *= smoothstep( g_flMixedData[ index + 2 ].w, 1, spotDot );
+	}
+
+	return fade;
+}
+
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	float2 vecTexcoords;
+	float3 vecWorldRay;
+	float3 vecWorld;
+
+#if USEWORLDTRANSFORM
+	vecTexcoords = In.vecProjXYW.xy / In.vecProjXYW.z;
+	vecWorldRay = g_vecFrustumCenter +
+		vecTexcoords.x * g_vecFrustumRight +
+		vecTexcoords.y * g_vecFrustumUp;
+	vecTexcoords = vecTexcoords * float2( 0.5f, -0.5f ) + 0.5f;
+	vecTexcoords += g_vecHalfScreenTexel;
+	vecWorld = In.vecWorld;
+#else
+	vecTexcoords = In.vTexCoord;
+	vecWorldRay = In.vecWorldRay;
+	vecWorld = g_vecViewOrigin + In.vecWorldRay;
+#endif
+
+	float flDepth = tex2D( sDepth, vecTexcoords ).x;
+
+#if USEWORLDTRANSFORM
+	flDepth = min( DEPTH_RECONSTRUCTION_LIMIT, flDepth );
+	flDepth = lerp( DEPTH_RECONSTRUCTION_LIMIT, flDepth, any( flDepth ) );
+#else
+	flDepth = min( DEPTH_RECONSTRUCTION_LIMIT_FULLSCREEN, flDepth );
+	flDepth = lerp( DEPTH_RECONSTRUCTION_LIMIT_FULLSCREEN, flDepth, any( flDepth ) );
+#endif
+
+	flDepth = min( flDepth, tex2D( sVolumeprepass, vecTexcoords ).x );
+
+	// definitive end of ray
+	float3 worldPosProjected = g_vecViewOrigin + vecWorldRay * flDepth;
+
+	vecWorldRay = normalize( vecWorldRay );
+
+	float4 flLight = 0;
+
+	float4x4 spotWorldToTexture = float4x4( g_flMixedData[ 5 ],
+		g_flMixedData[ 6 ],
+		g_flMixedData[ 7 ],
+		g_flMixedData[ 8 ] );
+
+	float3 vecMarchingRay = worldPosProjected - vecWorld;
+	float3 vecMarchingNormal = normalize( vecMarchingRay );
+	float flProjectedDot = step( 0.0001f, dot( vecMarchingNormal, vecWorldRay ) );
+
+	clip( flProjectedDot - 0.5f );
+#if DEFCFG_ADAPTIVE_VOLUMETRIC_LOD
+#	if VOLUME_LOD == 0
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD0;
+#	elif VOLUME_LOD == 1
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD1;
+#	elif VOLUME_LOD == 2
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD2;
+#	elif VOLUME_LOD == 3
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD3;
+#	else
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD4;
+#	endif
+#elif DEFCFG_CONFIGURABLE_VOLUMETRIC_LOD
+	float iNumSamples = VOLUME_SAMPLES;
+#else
+	float iNumSamples = VOLUMQUALITY_POINT_SAMPLES;
+#endif
+
+#if !DEFCFG_CONFIGURABLE_VOLUMETRIC_LOD || VOLUME_SAMPLES > 0
+
+#if NUM_SHADOWED
+	float flValidSamples = 0.1f;
+#endif
+
+	vecMarchingRay /= iNumSamples;
+	float3 vecPosition = vecWorld;
+
+	float4 depthPos;
+	float3 flShadowPeeling = 0;
+
+	for ( int itr = iNumSamples; itr > 0; itr-- )
+	{
+		depthPos = mul( float4( vecPosition, 1 ), spotWorldToTexture );
+		depthPos.xyz /= depthPos.w;
+
+		float2 dist2D = abs( float2( 0.5f, 0.5f ) - depthPos.xy );
+		float flFalloff = DoSpotLightVolum( 0, vecPosition, g_bDoSpotFalloff );
+
+#if NUM_SHADOWED_COOKIE
+		flFalloff *= ( 0.5f - max( dist2D.x, dist2D.y ) ) * 2.0f;
+#else
+		flValidSamples += any( flFalloff );
+#endif
+
+		float3 sample = PerformProjectedShadow( sMixedSampler[ 0 ],
+			depthPos.xyz, float4( 0, 0, 0, 0 ), float4( 0, 0, 0, 0 ),
+			g_flMixedData[ 4 ].x ) * flFalloff;
+
+#if NUM_SHADOWED_COOKIE
+		sample *= DoStandardCookie( sMixedSampler[ 1 ], depthPos.xy );
+#endif
+
+		flShadowPeeling += sample;
+		vecPosition += vecMarchingRay;
+	}
+
+	PS_OUTPUT Out;
+
+	Out.vColor_0.a = 1;
+
+#if NUM_SHADOWED
+	Out.vColor_0.xyz = flShadowPeeling / flValidSamples;
+#else
+	Out.vColor_0.xyz = flShadowPeeling / iNumSamples;
+#endif
+
+#else
+	PS_OUTPUT Out;
+
+	Out.vColor_0.a = 1;
+	Out.vColor_0.xyz = 0;
+#endif // !DEFCFG_CONFIGURABLE_VOLUMETRIC_LOD || VOLUME_SAMPLES > 0
+
+	Out.vColor_0.xyz *= g_flMixedData[ 1 ].rgb *		// diffuse color
+		(1 - g_flMixedData[ 4 ].x) *					// shadow min
+		VOLUMTWEAK_INTENSITY_SPOT;
+
+	return Out;
+}

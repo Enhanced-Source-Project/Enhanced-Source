@@ -1,0 +1,42 @@
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+sampler sNormals							: register( s0 );
+sampler sDepth								: register( s1 );
+
+const float3 g_vecViewOrigin					: register( c0 );
+
+
+struct PS_INPUT
+{
+	float2 vTexCoord				: TEXCOORD0;
+
+	float3 vecWorldRay				: TEXCOORD1;
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out = (PS_OUTPUT)0;
+
+	if ( tex2D( sDepth, In.vTexCoord ).r )
+	{
+		float flCompressedLightingctrl = tex2D( sNormals, In.vTexCoord ).a;
+
+		float phong_scale, phong_exp, half_lambert, litface;
+
+		UnpackLightingControls( flCompressedLightingctrl, phong_exp, half_lambert, litface );
+
+		Out.vColor_0.x = phong_exp;
+		Out.vColor_0.y = half_lambert;
+		Out.vColor_0.z = litface;
+		Out.vColor_0.w = 1;
+	}
+
+	return Out;
+}

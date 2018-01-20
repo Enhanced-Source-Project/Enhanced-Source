@@ -13,6 +13,7 @@ ITexture *GetDefRT_Albedo();
 ITexture *GetDefRT_Specular();
 ITexture *GetDefRT_LightCtrl();
 ITexture *GetDefRT_Lightaccum();
+ITexture *GetDefRT_Lightaccum2();
 
 ITexture *GetDefRT_VolumePrepass();
 ITexture *GetDefRT_VolumetricsBuffer( int index );
@@ -57,5 +58,11 @@ ITexture *GetProjectableVguiRT( int index );
 
 ITexture *GetRadiosityAlbedoRT_Ortho( int index );
 ITexture *GetRadiosityNormalRT_Ortho( int index );
+
+#if CSM_USE_COMPOSITED_TARGET
+int GetCMSCompResX();
+int GetCMSCompResY();
+bool IsCMSCompResLow();
+#endif // CSM_USE_COMPOSITED_TARGET
 
 #endif

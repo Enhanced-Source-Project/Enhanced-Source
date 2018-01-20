@@ -17,6 +17,48 @@
 #ifndef ALIGN8_POST
 #define ALIGN8_POST
 #endif
+#ifdef DEBUG  // stop crashing edit-and-continue
+FORCEINLINE float clamp( float val, float minVal, float maxVal )
+{
+	if( val < minVal )
+		return minVal;
+	else if( val > maxVal )
+		return maxVal;
+	else
+		return val;
+}
+#else // DEBUG
+FORCEINLINE float clamp( float val, float minVal, float maxVal )
+{
+#if defined(__i386__) || defined(_M_IX86)
+	_mm_store_ss( &val,
+		_mm_min_ss(
+			_mm_max_ss(
+				_mm_load_ss(&val),
+				_mm_load_ss(&minVal) ),
+			_mm_load_ss(&maxVal) ) );
+#else
+	val = fpmin(maxVal, val);
+	val = fpmax(minVal, val);
+#endif
+	return val;
+}
+#endif // DEBUG
+
+//
+// Returns a clamped value in the range [min, max].
+//
+template< class T >
+inline T clamp( T const &val, T const &minVal, T const &maxVal )
+{
+	if( val < minVal )
+		return minVal;
+	else if( val > maxVal )
+		return maxVal;
+	else
+		return val;
+}
+
 // plane_t structure
 // !!! if this is changed, it must be changed in asm code too !!!
 // FIXME: does the asm code even exist anymore?
@@ -518,7 +560,7 @@ inline float RemapValClamped( float val, float A, float B, float C, float D)
 	if ( A == B )
 		return fsel( val - B , D , C );
 	float cVal = (val - A) / (B - A);
-	cVal = clamp<float>( cVal, 0.0f, 1.0f );
+	cVal = Clamp<float>( cVal, 0.0f, 1.0f );
 
 	return C + (D - C) * cVal;
 }
@@ -629,10 +671,6 @@ template <class T> FORCEINLINE T AVG(T a, T b)
 // XYZ macro, for printf type functions - ex printf("%f %f %f",XYZ(myvector));
 #define XYZ(v) (v).x,(v).y,(v).z
 
-//
-// Returns a clamped value in the range [min, max].
-//
-#define clamp(val, min, max) (((val) > (max)) ? (max) : (((val) < (min)) ? (min) : (val)))
 
 inline float Sign( float x )
 {
@@ -1094,7 +1132,7 @@ inline float SimpleSplineRemapValClamped( float val, float A, float B, float C, 
 	if ( A == B )
 		return val >= B ? D : C;
 	float cVal = (val - A) / (B - A);
-	cVal = clamp( cVal, 0.0f, 1.0f );
+	cVal = Clamp( cVal, 0.0f, 1.0f );
 	return C + (D - C) * SimpleSpline( cVal );
 }
 

@@ -1,8 +1,6 @@
 #ifndef CDEFERRED_MANAGER_SERVER_H
 #define CDEFERRED_MANAGER_SERVER_H
 
-#include "cbase.h"
-
 class CDeferredLight;
 
 class CDeferredManagerServer : public CAutoGameSystem

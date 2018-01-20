@@ -1,0 +1,220 @@
+
+// STATIC:		"USEWORLDTRANSFORM"			"0..1"
+
+// DYNAMIC:		"NUM_SHADOWED_COOKIE"		"0..1"
+// DYNAMIC:		"NUM_SHADOWED"				"0..1"
+// DYNAMIC:		"VOLUME_LOD"				"0..4"
+// DYNAMIC:		"VOLUME_SAMPLES"			"0..100"
+
+// SKIP:		!$NUM_SHADOWED_COOKIE && !$NUM_SHADOWED
+// SKIP:		$NUM_SHADOWED_COOKIE && $NUM_SHADOWED
+
+#include "common_ps_fxc.h"
+#include "deferred_global_common.h"
+#include "common_lighting_fxc.h"
+
+#undef SHADOWMAPPING_METHOD
+
+#if SHADOWMAPPING_USE_COLOR
+	#define SHADOWMAPPING_METHOD SHADOWMAPPING_DEPTH_COLOR__RAW
+#else
+	#define SHADOWMAPPING_METHOD SHADOWMAPPING_DEPTH_STENCIL__RAW
+#endif
+
+#include "common_shadowmapping_fxc.h"
+
+/*
+
+	Point lights:
+
+	position		x y z	radius			w
+	color diffuse	x y z	falloffpower	w
+	color ambient	x y z
+
+	** shadowed or cookied **
+							shadowscale		w
+
+	rotationmatrix	x y z
+					x y z
+					x y z
+
+*/
+
+
+sampler sDepth								: register( s1 );
+
+const float3 g_vecViewOrigin				: register( c0 );
+//const float4 g_vecShadowMappingTweaks_0		: register( c1 );
+//const float4 g_vecShadowMappingTweaks_1		: register( c2 );
+
+#if USEWORLDTRANSFORM
+const float3 g_vecFrustumCenter		: register( c3 );
+const float3 g_vecFrustumRight		: register( c4 );
+const float3 g_vecFrustumUp			: register( c5 );
+const float2 g_vecHalfScreenTexel		: register( c6 );
+#endif
+
+sampler sMixedSampler[FREE_LIGHT_SAMPLERS]						: register( FIRST_LIGHT_SAMPLER_FXC );
+const float4 g_flMixedData[MAX_LIGHTDATA_CONSTANT_ROWS]			: register( FIRST_SHARED_LIGHTDATA_CONSTANT_FXC );
+
+struct PS_INPUT
+{
+#if USEWORLDTRANSFORM
+	float3 vecProjXYW				: TEXCOORD0;
+	float3 vecWorld					: TEXCOORD2;
+#else
+	float2 vTexCoord				: TEXCOORD0;
+	float3 vecWorldRay				: TEXCOORD1;
+#endif
+
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	float2 vecTexcoords;
+	float3 vecWorldRay;
+	float3 vecWorld;
+
+#if USEWORLDTRANSFORM
+	vecTexcoords = In.vecProjXYW.xy / In.vecProjXYW.z;
+	vecWorldRay = g_vecFrustumCenter +
+		vecTexcoords.x * g_vecFrustumRight +
+		vecTexcoords.y * g_vecFrustumUp;
+	vecTexcoords = vecTexcoords * float2( 0.5f, -0.5f ) + 0.5f;
+	vecTexcoords += g_vecHalfScreenTexel;
+	vecWorld = In.vecWorld;
+#else
+	vecTexcoords = In.vTexCoord;
+	vecWorldRay = In.vecWorldRay;
+	vecWorld = g_vecViewOrigin + In.vecWorldRay; // * 7.0f;
+#endif
+
+	float flDepth = tex2D( sDepth, vecTexcoords ).x;
+
+#if USEWORLDTRANSFORM
+	flDepth = min( DEPTH_RECONSTRUCTION_LIMIT, flDepth );
+	flDepth = lerp( DEPTH_RECONSTRUCTION_LIMIT, flDepth, any( flDepth ) );
+#else
+	flDepth = min( DEPTH_RECONSTRUCTION_LIMIT_FULLSCREEN, flDepth );
+	flDepth = lerp( DEPTH_RECONSTRUCTION_LIMIT_FULLSCREEN, flDepth, any( flDepth ) );
+#endif
+
+	float3 worldPosProjected = g_vecViewOrigin + vecWorldRay * flDepth;
+
+	vecWorldRay = normalize( vecWorldRay );
+
+	float4 flLight = 0;
+
+	float3 vecApproxSphereDelta = g_flMixedData[ 0 ].xyz - vecWorld;
+	float flDeltaLength = length( vecApproxSphereDelta );
+	float3 vecApproxSphereDeltaNormalized = vecApproxSphereDelta / flDeltaLength;
+
+#if USEWORLDTRANSFORM
+	// HACK: physically nonsense..
+	//vecWorld = g_flMixedData[ 0 ].xyz - vecApproxSphereDeltaNormalized * g_flMixedData[ 0 ].w;
+#endif
+
+	float3 vecMarchingRay = worldPosProjected - vecWorld;
+	float flApproxActualDiameter = length( vecMarchingRay );
+	float3 vecMarchingNormal = vecMarchingRay / flApproxActualDiameter;
+
+	float flProjectedDot = step( 0.0001f, dot( vecMarchingNormal, vecWorldRay ) );
+
+	clip( flProjectedDot - 0.5f );
+
+	float flDotAdjust = dot( vecApproxSphereDeltaNormalized, vecWorldRay );
+
+#if USEWORLDTRANSFORM
+	float flExpectedMaxDiameter = g_flMixedData[ 0 ].w + g_flMixedData[ 0 ].w * flDotAdjust;
+#else
+	float flMoveToPlane = dot( vecApproxSphereDelta, vecMarchingNormal );
+	float3 vecOnPlaneDelta = g_flMixedData[ 0 ].xyz - ( vecWorld + vecMarchingNormal * flMoveToPlane );
+
+	float flApproxRadius = sqrt( sin( ( 1.0f - ( length( vecOnPlaneDelta ) / g_flMixedData[ 0 ].w ) ) * 1.570796f ) );
+	float flExpectedMaxDiameter = flApproxRadius * g_flMixedData[ 0 ].w + flMoveToPlane;
+#endif
+
+	float flCurrentRayLength = min( flApproxActualDiameter, flExpectedMaxDiameter );
+	float flDiameterIntensityAdjust = flCurrentRayLength / flExpectedMaxDiameter;
+
+#if DEFCFG_ADAPTIVE_VOLUMETRIC_LOD
+#	if VOLUME_LOD == 0
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD0;
+#	elif VOLUME_LOD == 1
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD1;
+#	elif VOLUME_LOD == 2
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD2;
+#	elif VOLUME_LOD == 3
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD3;
+#	else
+		float iNumSamples = VOLUMQUALITY_SPOT_SAMPLES_LOD4;
+#	endif
+#elif DEFCFG_CONFIGURABLE_VOLUMETRIC_LOD
+	float iNumSamples = VOLUME_SAMPLES;
+#else
+	float iNumSamples = VOLUMQUALITY_POINT_SAMPLES;
+#endif
+
+
+#if USEWORLDTRANSFORM
+	vecMarchingRay = vecMarchingNormal * flCurrentRayLength;
+#else
+	vecMarchingRay = vecWorldRay * flCurrentRayLength;
+#endif
+
+	float3 flShadowPeeling = 0;
+
+	float3x3 matRotation = float3x3( g_flMixedData[ 3 ].xyz,
+			g_flMixedData[ 4 ].xyz,
+			g_flMixedData[ 5 ].xyz );
+
+#if !DEFCFG_CONFIGURABLE_VOLUMETRIC_LOD || VOLUME_SAMPLES > 0
+	float3 vecStart = vecWorld - g_flMixedData[ 0 ].xyz;
+	float3 vecEnd = vecWorld + vecMarchingRay - g_flMixedData[ 0 ].xyz;
+
+	vecStart = mul3x3( vecStart, matRotation );
+	vecEnd = mul3x3( vecEnd, matRotation );
+
+	vecMarchingRay = vecEnd - vecStart;
+	vecMarchingRay /= iNumSamples;
+
+	for ( int itr = iNumSamples; itr > 0; itr-- )
+	{
+		float dist = length( vecStart );
+
+		float flRadiusFalloff = 1.0f - min( 1, dist / g_flMixedData[ 0 ].w );
+
+		flRadiusFalloff = pow( flRadiusFalloff, g_flMixedData[ 1 ].w );
+
+		float3 sample = PerformDualParaboloidShadow( sMixedSampler[ 0 ],
+				vecStart, float4( 0, 0, 0, 0 ), float4( 0, 0, 0, 0 ),
+				dist, g_flMixedData[ 0 ].w, g_flMixedData[ 2 ].w );
+
+#if NUM_SHADOWED_COOKIE
+		sample *= DoCubemapCookie( sMixedSampler[ 1 ], vecStart );
+#endif
+
+		flShadowPeeling += sample * step( dist, g_flMixedData[ 0 ].w ) * flRadiusFalloff;
+
+		vecStart += vecMarchingRay;
+	}
+
+	flLight.xyz = flShadowPeeling / iNumSamples * flDiameterIntensityAdjust;
+#endif // !DEFCFG_CONFIGURABLE_VOLUMETRIC_LOD || VOLUME_SAMPLES > 0
+
+	PS_OUTPUT Out;
+
+	Out.vColor_0.a = 1;
+
+	Out.vColor_0.xyz = flLight *
+		g_flMixedData[ 1 ].xyz *			// diffuse color
+		(1 - g_flMixedData[ 2 ].w) *		// shadow min
+		VOLUMTWEAK_INTENSITY_POINT;
+
+	return Out;
+}

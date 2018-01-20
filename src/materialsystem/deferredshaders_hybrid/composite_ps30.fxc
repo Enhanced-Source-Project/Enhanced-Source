@@ -1,0 +1,345 @@
+
+// STATIC:		"ALPHATEST"			"0..1"
+// STATIC:		"TRANSLUCENT"		"0..1"
+// STATIC:		"READNORMAL"		"0..1"
+// STATIC:		"NOCULL"			"0..1"
+// STATIC:		"PHONGFRESNEL"		"0..1"
+// STATIC:		"ENVMAP"			"0..1"
+// STATIC:		"ENVMAPMASK"		"0..1"
+// STATIC:		"ENVMAPFRESNEL"		"0..1"
+
+// STATIC:		"RIMLIGHT"						"0..1"
+// STATIC:		"RIMLIGHTMODULATELIGHT"			"0..1"
+
+// STATIC:		"BASETEXTURE2"		"0..1"
+// STATIC:		"BLENDMODULATE"		"0..1"
+// STATIC:		"MULTIBLEND"		"0..1"
+
+// STATIC:		"SELFILLUM"					"0..1"
+// STATIC:		"SELFILLUM_MASK"			"0..1"
+// STATIC:		"SELFILLUM_ENVMAP_ALPHA"	"0..1"
+
+// DYNAMIC:		"PIXELFOGTYPE"		"0..1"
+
+
+// SKIP:		$ALPHATEST && $TRANSLUCENT
+// SKIP:		!$ENVMAP && $ENVMAPFRESNEL
+// SKIP:		!$ENVMAP && $ENVMAPMASK
+
+// SKIP:		$ENVMAP && !$READNORMAL
+// SKIP:		$ENVMAPFRESNEL && !$READNORMAL
+// SKIP:		$PHONGFRESNEL && !$READNORMAL
+// SKIP:		$RIMLIGHT && !$READNORMAL
+// SKIP:		!$RIMLIGHT && $RIMLIGHTMODULATELIGHT
+
+// SKIP:		!$BASETEXTURE2 && $BLENDMODULATE
+// SKIP:		$MULTIBLEND && $BLENDMODULATE
+// SKIP:		$MODEL && $BASETEXTURE2
+// SKIP:		$MODEL && $MULTIBLEND
+// SKIP:		$BASETEXTURE2 && $MULTIBLEND
+// SKIP:		$ENVMAPMASK && $MULTIBLEND
+// SKIP:		$SELFILLUM_MASK && $MULTIBLEND
+
+// SKIP:		!$SELFILLUM && $SELFILLUM_MASK
+// SKIP:		!$SELFILLUM && $SELFILLUM_ENVMAP_ALPHA
+// SKIP:		$SELFILLUM_MASK && $SELFILLUM_ENVMAP_ALPHA
+// SKIP:		$SELFILLUM_MASK && $ENVMAPMASK
+// SKIP:		$SELFILLUM_ENVMAP_ALPHA && !$ENVMAPMASK
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+#include "common_vertexlitgeneric_dx9.h"
+
+sampler sAlbedo							: register( s0 );
+
+#if ALPHATEST
+const float g_flAlphaRef				: register( c0 );
+#endif
+
+
+#if READNORMAL
+sampler sNormals						: register( s1 );
+#endif
+
+sampler sLightAccum						: register( s2 );
+
+const float2 g_vecFullScreenTexel		: register( c1 );
+const float4 g_vecFogParams				: register( c2 );
+const float3 g_vecOrigin				: register( c3 );
+
+const float g_flPhongScale				: register( c4 );
+
+#if ENVMAP
+sampler sEnvmap								: register( s3 );
+const float3 g_flEnvmapTint					: register( c5 );
+const float2 g_flEnvmapSaturationContrast	: register( c6 );
+
+#	if ENVMAPMASK
+sampler sEnvmapMask							: register( s4 );
+#	endif
+#endif
+
+#if BASETEXTURE2
+sampler sAlbedo2							: register( s5 );
+#endif
+
+#if PHONGFRESNEL || ENVMAPFRESNEL
+const float3 g_flFresnelRanges				: register( c7 );
+#endif
+
+#if RIMLIGHT
+const float3 g_flRimLight_Tint						: register( c8 );
+const float2 g_flRimLight_Exponent_AlbedoScale		: register( c9 );
+#endif
+
+#if ENVMAPMASK && BASETEXTURE2
+sampler sEnvmapMask2						: register( s7 );
+#endif
+
+#if BLENDMODULATE
+sampler sBlendmodulate						: register( s9 );
+#endif
+
+#if MULTIBLEND
+sampler sAlbedo2							: register( s5 );
+sampler sAlbedo3							: register( s7 );
+sampler sAlbedo4							: register( s8 );
+
+sampler SpecSampler1					: register( s9 );	// Spec map 1
+sampler SpecSampler2					: register( s10 );	// Spec map 2
+sampler SpecSampler3					: register( s13 );	// Spec map 3
+sampler SpecSampler4					: register( s14 );	// Spec map 4
+
+static const float3 cSpecularColor = float3( 1.0, 1.0, 1.0 );
+#endif
+
+#if SELFILLUM
+const float3 g_flSelfIllum_Tint				: register( c10 );
+#if SELFILLUM_MASK
+sampler sSelfIllumMask						: register( s4 ); // override envmap mask
+#endif
+#endif
+
+struct PS_INPUT
+{
+#if MULTIBLEND
+	float4 vTexCoord				: TEXCOORD0; // xy = blend 1 coord, zw = blend 2 coord
+	float4 vTexCoord2				: TEXCOORD4; // xy = blend 3 coord, zw = blend 4 coord
+#else
+#if BASETEXTURE2 && BLENDMODULATE
+	float4 vTexCoord				: TEXCOORD0; // xy = blend 1 coord, zw = blend 2 coord
+#else
+	float2 vTexCoord				: TEXCOORD0;
+#endif 
+#endif
+
+	//float3 vProjPosXYW				: TEXCOORD1;
+	float3 vWorldPos				: TEXCOORD2;
+
+#if ENVMAP || RIMLIGHT || PHONGFRESNEL || ENVMAPFRESNEL
+	float3 worldToEye				: TEXCOORD3;
+#endif
+
+#if BASETEXTURE2
+	float4 vColor_0					: COLOR0;
+#endif
+
+#if MULTIBLEND
+	float4 vAlphaBlend					: TEXCOORD5;
+	float4 vColorBlend1					: COLOR0;
+	float4 vColorBlend2					: COLOR1;
+	float4 vColorBlend3					: TEXCOORD6;
+	float3 vColorBlend4					: TEXCOORD7;
+#endif
+
+#if NOCULL
+	float vDir						: VFACE;
+#endif
+
+	float2 vScreenPos				: VPOS;
+};
+
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out;
+
+#if MULTIBLEND
+	float remaining = 1;
+	float4 flBlendFactors;
+	
+	float4	color1 = tex2D( sAlbedo, In.vTexCoord.xy ) * float4( In.vColorBlend1.rgb, 1.0 );
+	float4	color2 = tex2D( sAlbedo2, In.vTexCoord.zw ) * float4( In.vColorBlend2.rgb, 1.0 );
+	float4	color3 = tex2D( sAlbedo3, In.vTexCoord2.xy ) * float4( In.vColorBlend3.rgb, 1.0 );
+	float4	color4 = tex2D( sAlbedo4, In.vTexCoord2.zw ) * float4( In.vColorBlend4.rgb, 1.0 );
+	
+	float4   spec1 = tex2D( SpecSampler1, In.vTexCoord.xy ); 
+	float4   spec2 = tex2D( SpecSampler2, In.vTexCoord.zw );
+	float4   spec3 = tex2D( SpecSampler3, In.vTexCoord2.xy );
+	float4   spec4 = tex2D( SpecSampler4, In.vTexCoord2.zw );
+	
+	flBlendFactors.x = ComputeMultiBlendFactor( spec1.a, color1.a, In.vColorBlend1.a, In.vAlphaBlend.r, remaining );
+	flBlendFactors.y = ComputeMultiBlendFactor( spec2.a, color2.a, In.vColorBlend2.a, In.vAlphaBlend.g, remaining );
+	flBlendFactors.z = ComputeMultiBlendFactor( spec3.a, color3.a, In.vColorBlend3.a, In.vAlphaBlend.b, remaining );
+	flBlendFactors.w = remaining;
+	
+	float4 vResult;
+	vResult.rgb = ( color1.rgb * flBlendFactors.x ) + ( color2.rgb * flBlendFactors.y ) + ( color3.rgb * flBlendFactors.z ) + ( color4.rgb * flBlendFactors.w );
+	
+	float3 fSpecular = In.vAlphaBlend.w * cSpecularColor;
+	float3 fSpecFinal = float3( 0.0, 0.0, 0.0 );
+	if ( flBlendFactors.x > 0.0 )
+	{
+		fSpecFinal += spec1.r * In.vColorBlend1.rgb * flBlendFactors.x;
+	}
+	if ( flBlendFactors.y > 0.0 )
+	{
+		fSpecFinal += spec2.r * In.vColorBlend2.rgb * flBlendFactors.y;
+	}
+	if ( flBlendFactors.z > 0.0 )
+	{
+		fSpecFinal += spec3.r * In.vColorBlend3.rgb * flBlendFactors.z;
+	}
+	if ( flBlendFactors.w > 0.0 )
+	{
+		fSpecFinal += spec4.r * In.vColorBlend4.rgb * flBlendFactors.w;
+	}
+	
+	vResult.rgb += fSpecFinal * fSpecular;
+	
+	vResult.a = 1.0;
+#else
+	float4 vResult = tex2D( sAlbedo, In.vTexCoord.xy );
+	
+#if BASETEXTURE2
+	float4 flAlbedoSample2 = tex2D( sAlbedo2, In.vTexCoord.xy );
+	float flBlendfactor = In.vColor_0.w;
+#if BLENDMODULATE
+	flBlendfactor = GetModulatedBlend( flBlendfactor, tex2D( sBlendmodulate, In.vTexCoord.zw ).rg );
+#endif
+	vResult = lerp( vResult, flAlbedoSample2, flBlendfactor );
+#endif
+
+#endif
+
+#if ALPHATEST
+	clip( vResult.a - g_flAlphaRef );
+#endif
+
+#if TRANSLUCENT
+	Out.vColor_0.w = vResult.a;
+#else
+	Out.vColor_0.w = 1;
+#endif
+
+	//float2 screenPos = GetLightAccumUVs( In.vProjPosXYW, g_vecHalfScreenTexel );
+	float2 screenPos = ( In.vScreenPos + 0.5f ) * g_vecFullScreenTexel;
+
+	float4 flLighting = ReadLighting( tex2D( sLightAccum, screenPos ) );
+
+#if READNORMAL
+	float3 worldNormal = tex2D( sNormals, screenPos ).xyz * 2.0f - 1.0f;
+#endif
+
+
+#if RIMLIGHT || PHONGFRESNEL || ENVMAPFRESNEL
+	float3 worldToEye = normalize( In.worldToEye );
+	worldNormal = normalize( worldNormal );
+#endif
+
+#if PHONGFRESNEL || ENVMAPFRESNEL
+	float flFresnel = saturate( Fresnel( worldNormal, worldToEye, g_flFresnelRanges ) );
+#endif
+
+#if PHONGFRESNEL
+	flLighting.w *= flFresnel;
+#endif
+
+	float3 flSpecularLighting = (float3)0;
+
+#if RIMLIGHT
+	float dotEyeVec = 1.0f - saturate( dot( worldNormal, worldToEye ) );
+
+	float3 rimLighting = pow( dotEyeVec, g_flRimLight_Exponent_AlbedoScale.x );
+	rimLighting *= lerp( 1, vResult.rgb, g_flRimLight_Exponent_AlbedoScale.y );
+	rimLighting *= g_flRimLight_Tint;
+#if RIMLIGHTMODULATELIGHT
+	rimLighting *= dot( flLighting.rgb, float3( 0.299f, 0.587f, 0.114f ) );
+#endif
+
+	flSpecularLighting += rimLighting;
+#endif
+
+
+#if ENVMAP
+	float flSpecularFactor;
+#if ENVMAPMASK
+	float4 vecEnvmapmaskColor = tex2D( sEnvmapMask, In.vTexCoord.xy );
+#if BASETEXTURE2
+	vecEnvmapmaskColor = lerp( vecEnvmapmaskColor,
+		tex2D( sEnvmapMask2, In.vTexCoord.xy ),
+		flBlendfactor );
+#endif
+	flSpecularFactor = vecEnvmapmaskColor.r;
+#else
+	flSpecularFactor = vResult.a;
+#endif
+
+#if RIMLIGHT
+	float3 reflectVect = reflect( worldToEye, worldNormal );
+#else
+	float3 reflectVect = CalcReflectionVectorUnnormalized( worldNormal, In.worldToEye );
+#endif
+
+	float3 flCubemap = ENV_MAP_SCALE * texCUBE( sEnvmap, reflectVect ).rgb;
+	flCubemap *= flSpecularFactor;
+	flCubemap *= g_flEnvmapTint;
+
+#if ENVMAPFRESNEL
+	flCubemap *= flFresnel;
+#endif
+
+	float3 specularLightingSquared = flCubemap * flCubemap;
+	flCubemap = lerp( flCubemap, specularLightingSquared, g_flEnvmapSaturationContrast.y );
+	float3 greyScale = dot( flCubemap, float3( 0.299f, 0.587f, 0.114f ) );
+	flCubemap = lerp( greyScale, flCubemap, g_flEnvmapSaturationContrast.x );
+
+	flSpecularLighting += flCubemap;
+#endif
+
+#if SELFILLUM
+	float flSelfIllumAmount;
+#if SELFILLUM_MASK
+	flSelfIllumAmount = tex2D( sSelfIllumMask, In.vTexCoord.xy ).r;
+#elif SELFILLUM_ENVMAP_ALPHA
+	flSelfIllumAmount = vecEnvmapmaskColor.a;
+#else
+	flSelfIllumAmount = vResult.a;
+#endif
+	flLighting.rgb = max( flLighting.rgb,
+		vResult.rgb * g_flSelfIllum_Tint * flSelfIllumAmount );
+#endif
+
+	float flLightScale =
+#if DEFCFG_USE_SRGB_CONVERSION
+		LINEAR_LIGHT_SCALE;
+#else
+		GAMMA_LIGHT_SCALE;
+#endif
+
+	Out.vColor_0.xyz = ( ( vResult + flLighting.w * g_flPhongScale ) * flLighting.xyz
+		+ flSpecularLighting ) * flLightScale;
+
+#if PIXELFOGTYPE == 0
+	float fogAmt = CalcPixelFogFactor( PIXELFOGTYPE, g_vecFogParams, g_vecOrigin, In.vWorldPos, 0 );
+
+	Out.vColor_0.xyz = lerp( Out.vColor_0.xyz, g_LinearFogColor, fogAmt );
+#endif
+
+	return Out;
+}

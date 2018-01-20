@@ -1,0 +1,32 @@
+
+#include "common_vs_fxc.h"
+#include "common_deferred_fxc.h"
+
+
+struct VS_INPUT
+{
+	float3 vPos						: POSITION;
+	float2 vTexCoord_0				: TEXCOORD0;
+};
+
+struct VS_OUTPUT
+{
+	float4 vProjPos					: POSITION;
+	float2 vTexCoord				: TEXCOORD0;
+	float2 ZeroTexCoord				: TEXCOORD1;
+	float2 bloomTexCoord            : TEXCOORD2;
+};
+
+float4 Texel_Sizes : register (SHADER_SPECIFIC_CONST_0);
+VS_OUTPUT main( const VS_INPUT In )
+{
+	VS_OUTPUT Out;
+
+	Out.vProjPos = float4( In.vPos.xyz, 1.0f );
+	Out.vTexCoord = In.vTexCoord_0;
+	Out.ZeroTexCoord=float2(0,0);
+	Out.bloomTexCoord.x=In.vTexCoord_0.x+Texel_Sizes.z;
+	Out.bloomTexCoord.y=In.vTexCoord_0.y+Texel_Sizes.w;
+
+	return Out;
+}

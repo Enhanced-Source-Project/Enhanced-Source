@@ -54,8 +54,8 @@ void CFlashlightEffectDeferred::UpdateLightProjection( FlashlightState_t &state 
 	}
 
 	const bool bDoVolumetrics = ( r_flashlightvolumetrics.GetBool()
-		|| state.m_bVolumetric )
-		&& input->CAM_IsThirdPerson();
+								  || state.m_bVolumetric );
+		//&& input->CAM_IsThirdPerson();
 
 	if ( m_pDefLight->HasVolumetrics() != bDoVolumetrics )
 	{

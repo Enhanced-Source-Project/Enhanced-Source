@@ -1,0 +1,26 @@
+default:  fxctmp9_tmp\Water_ps20.inc shaders\fxc\Water_ps20.vcs fxctmp9_tmp\Water_ps20b.inc shaders\fxc\Water_ps20b.vcs
+
+fxctmp9_tmp\Water_ps20.inc shaders\fxc\Water_ps20.vcs: Water_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_vertexlitgeneric_dx9.h common_pragmas.h common_fog_ps_fxc.h common_ps_fxc.h common_flashlight_fxc.h shader_constant_register_map.h common_hlsl_cpp_consts.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." Water_ps2x.fxc-----Water_ps20
+	echo Water_ps2x.fxc>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_fog_ps_fxc.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_flashlight_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\Water_ps20b.inc shaders\fxc\Water_ps20b.vcs: Water_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_vertexlitgeneric_dx9.h common_pragmas.h common_fog_ps_fxc.h common_ps_fxc.h common_flashlight_fxc.h shader_constant_register_map.h common_hlsl_cpp_consts.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." Water_ps2x.fxc-----Water_ps20b
+	echo Water_ps2x.fxc>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_fog_ps_fxc.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_flashlight_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+

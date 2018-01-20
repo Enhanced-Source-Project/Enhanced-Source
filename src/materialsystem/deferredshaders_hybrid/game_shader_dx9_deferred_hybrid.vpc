@@ -1,0 +1,71 @@
+//-----------------------------------------------------------------------------
+//	game_shader_dx9.vpc
+//
+//	Project Script for mods to use an an example of how to override shaders
+//-----------------------------------------------------------------------------
+
+$Macro OUTBINNAME	"game_shader_generic_deferred"
+$Macro SRCDIR		"..\.."
+$Macro GAMENAME		"deferred_hybrid"
+$Include "$SRCDIR\materialsystem\deferredshaders_hybrid\game_shader_dx9_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions		"$BASE;DEFERRED;DEFERRED_HYBRID"
+	}
+}
+
+$Project "Shaders (Deferred_Hybrid)"
+{
+	$Folder	"Source Files"
+	{
+		$File	"blur.cpp"
+		$File	"cloak_blended_pass_helper.cpp"
+		$File	"core_dx9.cpp"
+		$File	"debug_lightingctrl.cpp"
+		$File	"debug_radiosity_grid.cpp"
+		$File	"debug_shadow.cpp"
+		$File	"DecalModulate_dx9.cpp"
+		$File	"deferred_brush.cpp"
+		$File	"deferred_decalModulate.cpp"
+		$File	"deferred_model.cpp"
+		$File	"deferred_utility.cpp"
+		$File	"defpass_composite.cpp"
+		$File	"defpass_gbuffer.cpp"
+		$File	"defpass_shadow.cpp"
+		$File	"emissive_scroll_blended_pass_helper.cpp"
+		$File	"flesh_interior_blended_pass_helper.cpp"
+		$File	"IDeferredExt.cpp"
+		$File	"lighting_global.cpp"
+		$File	"lighting_pass_basic.cpp"
+		$File	"lighting_pass_volum.cpp"
+		$File	"lighting_volume.cpp"
+		$File	"lighting_world.cpp"
+		$File	"lightmappedgeneric_dx9.cpp"
+		$File	"lightmappedgeneric_dx9_helper.cpp"
+		$File	"lightmappedpaint_dx9_helper.cpp"
+		$File	"multiblend.cpp"
+		$File	"multiblend_dx9_helper.cpp"
+		$File	"phong_dx9_helper.cpp"
+		$File	"radiosity_blend.cpp"
+		$File	"radiosity_global.cpp"
+		$File	"radiosity_propagate.cpp"
+		$File	"refract.cpp"
+		$File	"refract_dx9_helper.cpp"
+		$File	"screenspace_combine.cpp"
+		$File	"screenspace_shading.cpp"
+		$File	"unlitgeneric_dx9.cpp"
+		$File	"vertexlitgeneric_dx9.cpp"
+		$File	"vertexlitgeneric_dx9_helper.cpp"
+		$File	"volume_blend.cpp"
+		$File	"volume_prepass.cpp"
+		$File	"worldvertextransition.cpp"
+	}
+	
+	$File	"buildportalshaders.bat"
+	
+	$Shaders	"stdshader_dx9_30_deferred.txt"
+	$Shaders	"stdshader_dx9_30_stock_deferred.txt"
+}

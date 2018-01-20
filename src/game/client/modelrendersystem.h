@@ -17,6 +17,10 @@
 
 #include "clientleafsystem.h"
 
+// Experimental: caches the mat render data and reuses when possible
+// Useful for deferred mode, where we end up rendering the same thing over and over again
+// Can also prevent a crash with "out of render data memory"
+//#define USE_RENDERDATA_CACHE
 
 //-----------------------------------------------------------------------------
 // Forward declarations
@@ -60,6 +64,10 @@ public:
 	virtual void CleanupTranslucentTempData( TranslucentTempData_t *pTempData ) = 0;
 
 	virtual IMaterial *GetFastPathColorMaterial() = 0;
+
+#ifdef USE_RENDERDATA_CACHE
+	virtual void CleanupRenderData() = 0;
+#endif //USE_RENDERDATA_CACHE
 };
 
 

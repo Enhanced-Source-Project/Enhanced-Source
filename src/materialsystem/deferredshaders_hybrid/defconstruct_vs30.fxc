@@ -1,0 +1,56 @@
+// STATIC:		"USEWORLDTRANSFORM"			"0..1"
+// STATIC:		"SENDWORLDPOS"				"0..1"
+
+#include "common_deferred_fxc.h"
+#include "common_vs_fxc.h"
+
+#if USEWORLDTRANSFORM == 0
+const float3 g_vecFrustumCenter		: register( SHADER_SPECIFIC_CONST_0 );
+const float3 g_vecFrustumRight		: register( SHADER_SPECIFIC_CONST_1 );
+const float3 g_vecFrustumUp			: register( SHADER_SPECIFIC_CONST_2 );
+#endif
+
+struct VS_INPUT
+{
+	float3 vPos						: POSITION;
+	float2 vTexCoord_0				: TEXCOORD0;
+};
+
+struct VS_OUTPUT
+{
+	float4 vProjPos					: POSITION;
+
+#if USEWORLDTRANSFORM
+	float3 vecProjXYW				: TEXCOORD0;
+#else
+	float2 vTexCoord				: TEXCOORD0;
+	float3 vecWorldRay				: TEXCOORD1;
+#endif
+
+#if SENDWORLDPOS 
+	float3 vecWorld				: TEXCOORD2;
+#endif
+};
+
+VS_OUTPUT main( const VS_INPUT In )
+{
+	VS_OUTPUT Out;
+
+#if SENDWORLDPOS
+	Out.vecWorld = mul( float4( In.vPos, 1 ), cModel[0] );
+#endif
+
+#if USEWORLDTRANSFORM
+	Out.vProjPos = mul( float4( In.vPos.xyz, 1 ), cModelViewProj );
+	Out.vecProjXYW = Out.vProjPos.xyw;
+#else
+	Out.vProjPos = float4( In.vPos.xyz, 1 );
+	Out.vTexCoord = In.vTexCoord_0;
+
+	Out.vecWorldRay = g_vecFrustumCenter +
+		In.vPos.x * g_vecFrustumRight +
+		In.vPos.y * g_vecFrustumUp;
+#endif
+
+	return Out;
+}

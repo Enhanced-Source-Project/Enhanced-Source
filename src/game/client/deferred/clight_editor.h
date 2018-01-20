@@ -1,7 +1,6 @@
 #ifndef C_LIGHT_EDITOR_H
 #define C_LIGHT_EDITOR_H
 
-#include "cbase.h"
 #include "deferred/def_light_t.h"
 
 struct def_light_t;

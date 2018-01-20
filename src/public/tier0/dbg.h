@@ -259,11 +259,11 @@ DECLARE_LOGGING_CHANNEL( LOG_DEVELOPER_VERBOSE );
 
 // Legacy logging functions
 
-PLATFORM_INTERFACE void Msg( const tchar* pMsg, ... );
-PLATFORM_INTERFACE void Warning( const tchar *pMsg, ... ) FMTFUNCTION( 1, 2 );
-PLATFORM_INTERFACE void Warning_SpewCallStack( int iMaxCallStackLength, const tchar *pMsg, ... ) FMTFUNCTION( 2, 3 );
-PLATFORM_INTERFACE void Error( const tchar *pMsg, ... ) FMTFUNCTION( 1, 2 );
-PLATFORM_INTERFACE void Error_SpewCallStack( int iMaxCallStackLength, const tchar *pMsg, ... ) FMTFUNCTION( 2, 3 );
+FMTFUNCTION( 1, 2 ) PLATFORM_INTERFACE void Msg( const tchar* pMsg, ... );
+FMTFUNCTION( 1, 2 ) PLATFORM_INTERFACE void Warning( const tchar *pMsg, ... );
+FMTFUNCTION( 2, 3 ) PLATFORM_INTERFACE void Warning_SpewCallStack( int iMaxCallStackLength, const tchar *pMsg, ... );
+FMTFUNCTION( 1, 2 ) PLATFORM_INTERFACE void Error( const tchar *pMsg, ... );
+FMTFUNCTION( 2, 3 ) PLATFORM_INTERFACE void Error_SpewCallStack( int iMaxCallStackLength, const tchar *pMsg, ... );
 
 // @TODO: these callstack spew functions are currently disabled in the new logging system.  Need to add support for these if desired.
 PLATFORM_INTERFACE void _Warning_AlwaysSpewCallStack_Enable( bool bEnable );
@@ -272,16 +272,16 @@ PLATFORM_INTERFACE void _Warning_AlwaysSpewCallStack_Length( int iMaxCallStackLe
 PLATFORM_INTERFACE void _Error_AlwaysSpewCallStack_Enable( bool bEnable );
 PLATFORM_INTERFACE void _Error_AlwaysSpewCallStack_Length( int iMaxCallStackLength );
 
-PLATFORM_INTERFACE void DevMsg( int level, const tchar* pMsg, ... ) FMTFUNCTION( 2, 3 );
-PLATFORM_INTERFACE void DevWarning( int level, const tchar *pMsg, ... ) FMTFUNCTION( 2, 3 );
+FMTFUNCTION( 2, 3 ) PLATFORM_INTERFACE void DevMsg( int level, const tchar* pMsg, ... );
+FMTFUNCTION( 2, 3 ) PLATFORM_INTERFACE void DevWarning( int level, const tchar *pMsg, ... );
 
-PLATFORM_OVERLOAD void DevMsg( const tchar* pMsg, ... ) FMTFUNCTION( 1, 2 );
-PLATFORM_OVERLOAD void DevWarning( const tchar *pMsg, ... ) FMTFUNCTION( 1, 2 );
+FMTFUNCTION( 1, 2 ) PLATFORM_OVERLOAD void DevMsg( const tchar* pMsg, ... );
+FMTFUNCTION( 1, 2 ) PLATFORM_OVERLOAD void DevWarning( const tchar *pMsg, ... );
 
-PLATFORM_OVERLOAD void ConColorMsg( const Color& clr, const tchar* pMsg, ... ) FMTFUNCTION( 2, 3 );
-PLATFORM_OVERLOAD void ConMsg( const tchar* pMsg, ... ) FMTFUNCTION( 1, 2 );
+FMTFUNCTION( 2, 3 ) PLATFORM_OVERLOAD void ConColorMsg( const Color& clr, const tchar* pMsg, ... );
+FMTFUNCTION( 1, 2 ) PLATFORM_OVERLOAD void ConMsg( const tchar* pMsg, ... );
 
-PLATFORM_INTERFACE void ConDMsg( const tchar* pMsg, ... ) FMTFUNCTION( 1, 2 );
+FMTFUNCTION( 1, 2 ) PLATFORM_INTERFACE void ConDMsg( const tchar* pMsg, ... );
 
 // You can use this macro like a runtime assert macro.
 // If the condition fails, then Error is called with the message. This macro is called
@@ -302,7 +302,7 @@ PLATFORM_INTERFACE void ConDMsg( const tchar* pMsg, ... ) FMTFUNCTION( 1, 2 );
 #define DebugMsg(...)
 #endif
 
-PLATFORM_INTERFACE void COM_TimestampedLog( char const *fmt, ... ) FMTFUNCTION( 1, 2 );
+FMTFUNCTION( 1, 2 ) PLATFORM_INTERFACE void COM_TimestampedLog( char const *fmt, ... );
 
 /* Code macros, debugger interface */
 

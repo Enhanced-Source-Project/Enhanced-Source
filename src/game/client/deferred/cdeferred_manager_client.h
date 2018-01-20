@@ -1,7 +1,7 @@
 #ifndef CDEFERRED_MANAGER_CLIENT_H
 #define CDEFERRED_MANAGER_CLIENT_H
 
-#include "cbase.h"
+#include "materialsystem/MaterialSystemUtil.h"
 
 enum DEF_MATERIALS
 {
@@ -69,6 +69,7 @@ private:
 
 	IMaterial *m_pMat_Def[ DEF_MAT_COUNT ];
 	KeyValues *m_pKV_Def[ DEF_MAT_COUNT ];
+	CMaterialReference m_MatRef_Def[ DEF_MAT_COUNT ];
 };
 
 bool CDeferredManagerClient::IsDeferredRenderingEnabled()

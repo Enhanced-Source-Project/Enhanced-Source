@@ -1,9 +1,10 @@
 #ifndef C_LIGHT_MANAGER_H
 #define C_LIGHT_MANAGER_H
 
-#include "cbase.h"
+#include "deferred/deferred_shared_common.h"
 
 class CViewSetup;
+class CViewRender;
 class CDeferredViewRender;
 #if DEFCFG_USE_SSE
 struct def_light_presortdatax4_t;
@@ -39,6 +40,10 @@ public:
 	bool RemoveLight( def_light_t *l );
 	bool IsLightRendered( def_light_t *l );
 
+	int CountTempLights();
+	void AddTempLight( def_light_temp_t *l );
+	void UpdateTemplights();
+
 #if DEFCFG_USE_SSE
 	void AllocateSortDataBuffer();
 	void BuildLightSortDataBuffer();
@@ -56,7 +61,7 @@ public:
 	void SortLights();
 
 	// draw all lights set up for rendering
-	void RenderLights( const CViewSetup &view, CDeferredViewRender *pCaller );
+	void RenderLights( const CViewSetup &view, CViewRender *pCaller );
 
 	// add volumes to scene after composition
 	void RenderVolumetrics( const CViewSetup &view );
@@ -95,10 +100,12 @@ private:
 
 #if DEFCFG_USE_SSE
 	def_light_presortdatax4_t* m_pSortDataX4;
-	unsigned int m_uiSortDataCount;			
+	unsigned int m_uiSortDataCount;
+	bool m_bSortDataNeedsRealloc;
 #endif
 
 	CUtlVector< def_light_t* > m_hDeferredLights;
+	CUtlVector< def_light_temp_t* > m_hDeferredTempLights;
 
 	CUtlVector< def_light_t* > m_hRenderLights;
 	CUtlVector< def_light_t* > m_hPreSortedLights[ LSORT_COUNT ];

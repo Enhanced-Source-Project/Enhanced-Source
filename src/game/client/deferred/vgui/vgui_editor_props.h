@@ -1,7 +1,6 @@
 #ifndef C_VGUI_EDITOR_PROPS_H
 #define C_VGUI_EDITOR_PROPS_H
 
-#include "cbase.h"
 #include "vgui_controls/frame.h"
 
 

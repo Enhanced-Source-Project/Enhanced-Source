@@ -1,0 +1,24 @@
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+sampler sTex							: register( s0 );
+
+struct PS_INPUT
+{
+	float2 vTexCoord			: TEXCOORD0;
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out;
+
+	Out.vColor_0 = tex2D( sTex, In.vTexCoord ) * GAMMA_LIGHT_SCALE;
+
+	return Out;
+}

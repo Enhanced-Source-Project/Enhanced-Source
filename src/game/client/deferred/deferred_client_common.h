@@ -35,7 +35,11 @@ extern ConVar deferred_radiosity_debug;
 
 #define PATHLOCATION_PROJECTABLE_SCRIPTS "scripts/vguiprojected"
 
+#ifdef DEFERRED_HYBRID
+#include "../../materialsystem/deferredshaders_hybrid/IDeferredExt.h"
+#else
 #include "../../materialsystem/deferredshaders/IDeferredExt.h"
+#endif
 
 #include "deferred/deferred_rt.h"
 #include "deferred/IDefCookie.h"
@@ -53,7 +57,6 @@ extern ConVar deferred_radiosity_debug;
 #include "deferred/viewrender_deferred.h"
 
 #include "deferred/flashlighteffect_deferred.h"
-#include "deferred/materialsystem_passthru.h"
 
 void OnCookieTableChanged( void *object, INetworkStringTable *stringTable, int stringNumber, const char *newString, void const *newData );
 

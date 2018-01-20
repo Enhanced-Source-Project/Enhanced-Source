@@ -1,0 +1,237 @@
+
+// STATIC:		"ALPHATEST"			"0..1"
+// STATIC:		"BUMPMAP"			"0..2"
+// STATIC:		"NOCULL"			"0..1"
+// STATIC:		"PHONGMAP"			"0..1"
+// STATIC:		"TWOTEXTURE"		"0..1"
+// STATIC:		"BLENDMODULATE"		"0..1"
+// STATIC:		"MULTIBLEND"		"0..1"
+// STATIC:		"DECAL"				"0..1"
+
+// SKIP:		!$TWOTEXTURE && !$MULTIBLEND && $BLENDMODULATE
+// SKIP:		$MODEL && $TWOTEXTURE
+
+// SKIP:		$MODEL && $MULTIBLEND
+// SKIP:		$TWOTEXTURE && $MULTIBLEND
+
+
+// SKIP:		$DECAL && $MULTIBLEND
+// SKIP:		$DECAL && $BLENDMODULATE
+// SKIP:		$DECAL && $BUMPMAP
+// SKIP:		$DECAL && $NOCULL
+// SKIP:		$DECAL && $PHONGMAP
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+float GetMultiBlend( const float BlendAmount, inout float Remaining )
+{
+	float Result = smoothstep( 0.0, 1.0f, BlendAmount );
+	Result = min( Result, Remaining );
+	Remaining -= Result;
+
+	return Result;
+}
+
+sampler sAlbedo							: register( s0 );
+
+#if ALPHATEST
+const float g_flAlphaRef				: register( c0 );
+#endif
+
+
+#if BUMPMAP
+sampler sBumpmap						: register( s1 );
+#endif
+
+#if PHONGMAP
+sampler sPhongmap						: register( s2 );
+#else
+const float2 g_flPhong_exp				: register( c2 );
+#endif
+
+const float2 g_flHalflambert_Litface	: register( c1 );
+
+#if TWOTEXTURE
+sampler sBumpmap2							: register( s3 );
+#endif
+
+#if BLENDMODULATE
+sampler sBlendmodulate						: register( s4 );
+#endif
+
+#if MULTIBLEND
+sampler sBumpmap2							: register( s3 );
+sampler sBumpmap3							: register( s5 );
+sampler sBumpmap4							: register( s6 );
+#if BLENDMODULATE
+sampler sBlendmodulate2						: register( s7 );
+sampler sBlendmodulate3						: register( s8 );
+#endif
+#endif
+
+#if TWOTEXTURE || MULTIBLEND
+sampler sAlbedo2							: register( s9 );
+#endif
+#if MULTIBLEND
+sampler sAlbedo3							: register( s10 );
+sampler sAlbedo4							: register( s11 );
+#endif
+
+#if ENVMAP
+//sampler sEnvmap								: register( s13 );
+//const float3 g_flEnvmapTint					: register( c3 );
+//const float2 g_flEnvmapSaturationContrast	: register( c4 );
+
+#	if ENVMAPMASK
+//sampler sEnvmapMask							: register( s14 );
+#	endif
+#endif
+
+struct PS_INPUT
+{
+#if BLENDMODULATE
+	float4 vTexCoord				: TEXCOORD0;
+#else
+	float2 vTexCoord				: TEXCOORD0;
+#endif
+	float4 worldNormal_Depth		: TEXCOORD1;
+
+#if BUMPMAP
+	float3 worldTangentS			: TEXCOORD2;
+	float3 worldTangentT			: TEXCOORD3;
+#endif
+
+#if NOCULL
+	float vDir						: VFACE;
+#endif
+
+#if TWOTEXTURE
+	float4 vColor_0					: COLOR0;
+#endif
+
+#if MULTIBLEND
+#if BLENDMODULATE
+	float4 vTexCoordBlendmod23			: TEXCOORD4;
+#endif
+	float3 vAlphaBlend					: TEXCOORD5;
+	float4 vColorBlend1					: COLOR0;
+	float4 vColorBlend2					: COLOR1;
+	float4 vColorBlend3					: TEXCOORD6;
+	float3 vColorBlend4					: TEXCOORD7;
+#endif
+};
+
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+
+#if ( DECAL == 0 )
+	float4 vColor_1				:	COLOR1;
+	float4 vColor_2				:	COLOR2;
+	float4 vColor_3				:	COLOR3;
+#endif
+};
+
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out;
+
+	float4 flAlbedoSample = tex2D( sAlbedo, In.vTexCoord.xy );
+#if ALPHATEST
+	clip( flAlbedoSample.a - g_flAlphaRef );
+#endif
+
+#if DECAL
+	Out.vColor_0 = flAlbedoSample;
+#else
+
+#if TWOTEXTURE
+	float flBlendfactor = In.vColor_0.w;
+#if BLENDMODULATE
+	flBlendfactor = GetModulatedBlend( flBlendfactor, tex2D( sBlendmodulate, In.vTexCoord.zw ).rg );
+#endif
+#elif MULTIBLEND
+	float remaining = 1;
+	float4 flBlendFactors;
+#if BLENDMODULATE
+	flBlendFactors.x = GetMultiBlendModulated( tex2D( sBlendmodulate, In.vTexCoord.zw ).rg, In.vColorBlend1.a, In.vAlphaBlend.x, remaining );
+	flBlendFactors.y = GetMultiBlendModulated( tex2D( sBlendmodulate2, In.vTexCoordBlendmod23.xy ).rg, In.vColorBlend2.a, In.vAlphaBlend.y, remaining );
+	flBlendFactors.z = GetMultiBlendModulated( tex2D( sBlendmodulate3, In.vTexCoordBlendmod23.zw ).rg, In.vColorBlend3.a, In.vAlphaBlend.z, remaining );
+#else
+	flBlendFactors.x = GetMultiBlend( In.vColorBlend1.a, remaining );
+	flBlendFactors.y = GetMultiBlend( In.vColorBlend2.a, remaining );
+	flBlendFactors.z = GetMultiBlend( In.vColorBlend3.a, remaining );
+#endif
+	flBlendFactors.w = remaining;
+#endif
+
+#if BUMPMAP
+	float3 bumpNormal = tex2D( sBumpmap, In.vTexCoord.xy ).rgb;
+
+#if TWOTEXTURE
+	float3 bumpNormal2 = tex2D( sBumpmap2, In.vTexCoord.xy ).rgb;
+	bumpNormal = lerp( bumpNormal, bumpNormal2, flBlendfactor );
+#elif MULTIBLEND
+	bumpNormal = bumpNormal * flBlendFactors.x
+		+ tex2D( sBumpmap2, In.vTexCoord.xy ) * flBlendFactors.y
+		+ tex2D( sBumpmap3, In.vTexCoord.xy ) * flBlendFactors.z
+		+ tex2D( sBumpmap4, In.vTexCoord.xy ) * flBlendFactors.w;
+#endif
+
+	float3 tangentNormal;
+#if BUMPMAP == 1
+	tangentNormal = bumpNormal * 2.0f - 1.0f;
+#else
+	tangentNormal = normalize( bumpBasis[0]*bumpNormal.x + bumpBasis[1]*bumpNormal.y + bumpBasis[2]*bumpNormal.z);
+#endif
+	float3 worldNormal = Vec3TangentToWorld( tangentNormal, In.worldNormal_Depth.xyz, In.worldTangentS, In.worldTangentT );
+#else
+	float3 worldNormal = In.worldNormal_Depth.xyz;
+#endif
+
+#if NOCULL
+	worldNormal *= In.vDir;
+#endif
+
+#if TWOTEXTURE
+	flAlbedoSample = lerp( flAlbedoSample, tex2D( sAlbedo2, In.vTexCoord.xy ), flBlendfactor );
+#elif MULTIBLEND
+	flAlbedoSample = flAlbedoSample * flBlendFactors.x
+		+ tex2D( sAlbedo2, In.vTexCoord.xy ) * flBlendFactors.y
+		+ tex2D( sAlbedo3, In.vTexCoord.xy ) * flBlendFactors.z
+		+ tex2D( sAlbedo4, In.vTexCoord.xy ) * flBlendFactors.w;
+
+	flAlbedoSample.rgb *= In.vColorBlend1.rgb * flBlendFactors.x
+		+ In.vColorBlend2.rgb * flBlendFactors.y
+		+ In.vColorBlend3.rgb * flBlendFactors.z
+		+ In.vColorBlend4.rgb * flBlendFactors.w;
+#endif
+
+
+	worldNormal = worldNormal * 0.5f + 0.5f;
+
+#if ( TRANSLUCENT == 0 )
+#	if PHONGMAP
+	float phong_exp = tex2D( sPhongmap, In.vTexCoord.xy ).x * 63.0f;
+#	else
+#		if BUMPMAP2
+	float phong_exp = lerp( g_flPhong_exp.x, g_flPhong_exp.y, flBlendfactor );
+#		else
+	float phong_exp = g_flPhong_exp.x;
+#		endif
+#	endif
+#endif
+
+	Out.vColor_0 = flAlbedoSample;
+	Out.vColor_1 = float4( In.worldNormal_Depth.w, 0, 0, 1 );
+	Out.vColor_2 = float4( worldNormal, PackLightingControls( phong_exp,
+		g_flHalflambert_Litface.x, g_flHalflambert_Litface.y ) );;
+	Out.vColor_3 = float4( 0, 0, 0, 0 );
+
+#endif
+
+	return Out;
+}

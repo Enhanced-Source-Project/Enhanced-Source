@@ -1,0 +1,80 @@
+
+// DYNAMIC:		"CASCADE"		"0..1"
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+
+const float3 g_vecGridOrigin				: register( c0 );
+
+const float4x3 g_matOrtho					: register( c1 ); // up to 3
+const float4 g_vecUVTransform				: register( c4 );
+const float4 g_vecSlopeSettings				: register( c5 );
+const float3 g_vecShadowOrigin				: register( c6 );
+const float3 g_vecShadowForward				: register( c7 );
+
+sampler sShadowAlbedo						: register( s0 );
+sampler sShadowNormal						: register( s1 );
+sampler sShadowDepth						: register( s2 );
+
+struct PS_INPUT
+{
+	float3 vWorldPos				: TEXCOORD0;
+};
+
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+	float4 vColor_1				:	COLOR1;
+};
+
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out;
+
+	float3 worldPos = g_vecGridOrigin + In.vWorldPos;
+
+	float3 shadowPos = mul( float4( worldPos, 1 ), g_matOrtho );
+#if VENDOR == VENDOR_FXC_AMD
+	AMD_PRE_5K_NON_COMPLIANT
+#else
+	float flMask = 1.0f - any( floor( shadowPos.xy ) );
+#endif
+
+	shadowPos.xy = shadowPos.xy * g_vecUVTransform.zw + g_vecUVTransform.xy;
+	float flShadowDepth = dot( worldPos - g_vecShadowOrigin, g_vecShadowForward ) * g_vecSlopeSettings.w;
+
+	float3 flNormalSample = tex2D( sShadowNormal, shadowPos.xy ).xyz;
+	float flDepthSample = tex2D( sShadowDepth, shadowPos.xy ).r;
+	float flDepthDelta = flDepthSample - flShadowDepth;
+
+#if 0
+	clip( step( 0, flDepthDelta )
+		* step( flDepthDelta,
+#if CASCADE == 0
+		RADIOSITY_BUFFER_GRID_STEP_SIZE_CLOSE
+#else
+		RADIOSITY_BUFFER_GRID_STEP_SIZE_FAR
+#endif
+		* ( 3.0f + dot( flNormalSample * 2 - 1, g_vecShadowForward ) * 2.5f ) * g_vecSlopeSettings.w
+		) - 0.5f );
+#else
+	flMask *= step( 0, flDepthDelta ) * step( flDepthDelta,
+#if CASCADE == 0
+		RADIOSITY_BUFFER_GRID_STEP_SIZE_CLOSE
+#else
+		RADIOSITY_BUFFER_GRID_STEP_SIZE_FAR
+#endif
+		* ( 3.0f + dot( flNormalSample * 2 - 1, g_vecShadowForward ) * 2.5f ) * g_vecSlopeSettings.w
+		);
+#endif
+
+	float3 flRadiositySample = tex2D( sShadowAlbedo, shadowPos.xy ).rgb;
+
+	Out.vColor_0 = float4( flRadiositySample * flMask, 1 );
+	Out.vColor_1 = float4( flNormalSample, 1 );
+
+	return Out;
+}

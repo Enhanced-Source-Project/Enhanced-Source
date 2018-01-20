@@ -1,5 +1,6 @@
 
 #include "cbase.h"
+#include "videocfg/videocfg.h"
 #include "deferred/deferred_shared_common.h"
 
 #include "materialsystem/itexture.h"
@@ -10,6 +11,7 @@ static CTextureReference g_tex_Depth;
 static CTextureReference g_tex_LightCtrl;
 #endif
 static CTextureReference g_tex_Lightaccum;
+static CTextureReference g_tex_Lightaccum2;
 static CTextureReference g_tex_Albedo;
 static CTextureReference g_tex_Specular;
 
@@ -38,6 +40,12 @@ static CTextureReference g_tex_ProjectableVGUI[ NUM_PROJECTABLE_VGUI ];
 
 static float g_flDepthScalar = 65536.0f;
 
+#if CSM_USE_COMPOSITED_TARGET
+static int g_cms_comp_res_x = CSM_COMP_RES_X_LOW;
+static int g_cms_comp_res_y = CSM_COMP_RES_Y_LOW;
+static bool g_cms_comp_res_islow = true;
+#endif // CSM_USE_COMPOSITED_TARGET
+
 float GetDepthMapDepthResolution( float zDelta )
 {
 	return zDelta / g_flDepthScalar;
@@ -45,18 +53,39 @@ float GetDepthMapDepthResolution( float zDelta )
 
 void DefRTsOnModeChanged()
 {
-	InitDeferredRTs();
+	// Causes a crash ingame, so only allow in main menu
+	if( !engine->IsInGame() )
+	{
+		InitDeferredRTs();
+	}
 }
 
 void InitDeferredRTs( bool bInitial )
 {
+	if( bInitial ) // TODO: Does not work correctly mid game
+	{
+		// First determine if we are using low or high
+		if( GetGPUMemLevel() <= GPU_MEM_LEVEL_LOW || GetCPULevel() <= CPU_LEVEL_LOW )
+		{
+			g_cms_comp_res_x = CSM_COMP_RES_X_LOW;
+			g_cms_comp_res_y = CSM_COMP_RES_Y_LOW;
+			g_cms_comp_res_islow = true;
+		}
+		else
+		{
+			g_cms_comp_res_x = CSM_COMP_RES_X_HIGH;
+			g_cms_comp_res_y = CSM_COMP_RES_Y_HIGH;
+			g_cms_comp_res_islow = false;
+		}
+	}
+
 	if ( !bInitial )
 		materials->ReEnableRenderTargetAllocation_IRealizeIfICallThisAllTexturesWillBeUnloadedAndLoadTimeWillSufferHorribly(); // HAHAHAHA. No.
 
-	int screen_w, screen_h;
+	//int screen_w, screen_h;
 	int dummy = 128;
 
-	materials->GetBackBufferDimensions( screen_w, screen_h );
+	//materials->GetBackBufferDimensions( screen_w, screen_h );
 
 const ImageFormat fmt_gbuffer0 =
 #if DEFCFG_LIGHTCTRL_PACKING
@@ -93,9 +122,11 @@ const ImageFormat fmt_gbuffer0 =
 	const ImageFormat fmt_depth = GetDeferredManager()->GetShadowDepthFormat();
 	const ImageFormat fmt_depthColor = bShadowUseColor ? IMAGE_FORMAT_R32F
 		: g_pMaterialSystemHardwareConfig->GetNullTextureFormat();
+#if DEFCFG_ENABLE_RADIOSITY == 1
 	const ImageFormat fmt_radAlbedo = IMAGE_FORMAT_RGB888;
 	const ImageFormat fmt_radNormal = IMAGE_FORMAT_RGB888;
 	const ImageFormat fmt_radBuffer = IMAGE_FORMAT_RGB888;
+#endif // DEFCFG_ENABLE_RADIOSITY
 
 	if ( fmt_depth == IMAGE_FORMAT_D16_SHADOW )
 		g_flDepthScalar = pow( 2.0, 16 );
@@ -110,9 +141,11 @@ const ImageFormat fmt_gbuffer0 =
 	unsigned int depthFlags =			TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT | TEXTUREFLAGS_RENDERTARGET;
 	unsigned int shadowColorFlags =		TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT | TEXTUREFLAGS_RENDERTARGET | TEXTUREFLAGS_POINTSAMPLE;
 	unsigned int projVGUIFlags =		TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT | TEXTUREFLAGS_RENDERTARGET;
+#if DEFCFG_ENABLE_RADIOSITY == 1
 	unsigned int radAlbedoNormalFlags =	TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT | TEXTUREFLAGS_RENDERTARGET | TEXTUREFLAGS_POINTSAMPLE;
 	unsigned int radBufferFlags =		TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT | TEXTUREFLAGS_RENDERTARGET;
 	unsigned int radNormalFlags =		TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT | TEXTUREFLAGS_RENDERTARGET | TEXTUREFLAGS_POINTSAMPLE;
+#endif // DEFCFG_ENABLE_RADIOSITY
 
 	materials->BeginRenderTargetAllocation();
 
@@ -169,6 +202,13 @@ const ImageFormat fmt_gbuffer0 =
 			MATERIAL_RT_DEPTH_NONE,
 			lightAccumFlags, 0 ) );
 
+		g_tex_Lightaccum2.Init( materials->CreateNamedRenderTargetTextureEx2( DEFRTNAME_LIGHTACCUM2,
+			dummy, dummy,
+			RT_SIZE_FULL_FRAME_BUFFER_ROUNDED_UP,
+			fmt_lightAccum,
+			MATERIAL_RT_DEPTH_NONE,
+			lightAccumFlags, 0 ) );
+
 		for ( int i = 0; i < 2; i++ )
 			g_tex_VolumetricsBuffer[ i ].Init( materials->CreateNamedRenderTargetTextureEx2(
 				VarArgs( "%s%02i", DEFRTNAME_VOLUMACCUM, i ),
@@ -213,7 +253,7 @@ const ImageFormat fmt_gbuffer0 =
 				MATERIAL_RT_DEPTH_NONE,
 				shadowColorFlags, 0 ) );
 
-#if DEFCFG_ENABLE_RADIOSITY
+#if DEFCFG_ENABLE_RADIOSITY != 0
 			g_tex_ShadowRad_Albedo_Ortho[i].Init( materials->CreateNamedRenderTargetTextureEx2(
 				VarArgs( "%s%02i", DEFRTNAME_SHADOWRAD_ALBEDO_ORTHO, i ),
 				iResolution_x, iResolution_y,
@@ -404,9 +444,11 @@ const ImageFormat fmt_gbuffer0 =
 		Assert( res_x == g_tex_ShadowColor_DP[i]->GetActualWidth() );
 	}
 
-	
-
 	materials->EndRenderTargetAllocation();
+	if( !bInitial )
+	{
+		materials->FinishRenderTargetAllocation();
+	}
 
 	GetDeferredExt()->CommitTexture_General( g_tex_Normals, g_tex_Depth,
 #if ( DEFCFG_LIGHTCTRL_PACKING == 0 )
@@ -415,7 +457,8 @@ const ImageFormat fmt_gbuffer0 =
 		g_tex_Albedo,
 		g_tex_Specular,
 #endif
-		g_tex_Lightaccum );
+		g_tex_Lightaccum,
+		g_tex_Lightaccum2 );
 
 	for ( int i = 0; i < MAX_SHADOW_ORTHO; i++ )
 		GetDeferredExt()->CommitTexture_CascadedDepth( i,
@@ -516,6 +559,12 @@ ITexture *GetDefRT_Lightaccum()
 	return g_tex_Lightaccum;
 }
 
+ITexture *GetDefRT_Lightaccum2()
+{
+	Assert( g_tex_Lightaccum2.IsValid() );
+	return g_tex_Lightaccum2;
+}
+
 ITexture *GetDefRT_VolumePrepass()
 {
 	Assert( g_tex_VolumePrepass.IsValid() );
@@ -599,3 +648,20 @@ ITexture *GetRadiosityNormalRT_Ortho( int index )
 	Assert( g_tex_ShadowRad_Normal_Ortho[ index ].IsValid() );
 	return g_tex_ShadowRad_Normal_Ortho[ index ];
 }
+
+#if CSM_USE_COMPOSITED_TARGET
+int GetCMSCompResX()
+{
+	return g_cms_comp_res_x;
+}
+
+int GetCMSCompResY()
+{
+	return g_cms_comp_res_y;
+}
+
+bool IsCMSCompResLow()
+{
+	return g_cms_comp_res_islow;
+}
+#endif // CSM_USE_COMPOSITED_TARGET

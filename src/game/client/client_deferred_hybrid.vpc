@@ -1,0 +1,50 @@
+//-----------------------------------------------------------------------------
+//	CLIENT_HL2.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+$Macro SRCDIR		"..\.."
+$Macro GAMENAME 	"deferred_hybrid"
+
+$Include "$SRCDIR\game\client\client_hl2_base.vpc"
+$Include "$SRCDIR\game\client\client_shadereditor_base.vpc"
+$Include "$SRCDIR\game\client\client_deferred_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$PreprocessorDefinitions		"$BASE;HL2_EPISODIC;DEFERRED_HYBRID"
+	}
+}
+
+$Project "Client (Deferred_Hybrid)"
+{
+	$Folder	"Source Files"
+	{
+		$Folder "Episodic"
+		{
+			$File	"episodic/c_npc_advisor.cpp"
+			$File	"episodic/c_npc_puppet.cpp"
+			$File	"episodic/c_prop_coreball.cpp"
+			$File	"episodic/c_prop_scalable.cpp"
+			$File	"episodic/c_vehicle_jeep_episodic.cpp"
+			$File	"episodic/c_vort_charge_token.cpp"
+			$File	"episodic/c_weapon_hopwire.cpp"
+			$File	"episodic/episodic_screenspaceeffects.cpp"
+			$File	"episodic/flesh_internal_material_proxy.cpp"
+			$File	"hl2/hud_radar.cpp"
+		}
+		
+		$Folder "Deferred"
+		{
+			$Folder "Client"
+			{
+				-$File	"deferred\materialsystem_passthru.cpp"
+				-$File	"deferred\materialsystem_passthru.h"
+				$File	"lw/videocfgext.cpp"
+			}
+		}
+	}
+}

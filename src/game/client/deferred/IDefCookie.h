@@ -1,8 +1,6 @@
 #ifndef IDEF_COOKIE_H
 #define IDEF_COOKIE_H
 
-#include "cbase.h"
-
 class IDefCookie
 {
 public:

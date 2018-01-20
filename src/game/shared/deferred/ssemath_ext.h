@@ -56,14 +56,14 @@ FORCEINLINE fltx4 FourDotProducts( fltx4* m, fltx4 v )
 // assumes that all are transposed before hand
 FORCEINLINE void FourCrossProducts
 (
-	fltx4& a0,
-	fltx4& a1,
-	fltx4& a2,
-	fltx4& a3,
-	fltx4& b0,
-	fltx4& b1,
-	fltx4& b2,
-	fltx4& b3,
+	const fltx4& a0,
+	const fltx4& a1,
+	const fltx4& a2,
+	const fltx4& a3,
+	const fltx4& b0,
+	const fltx4& b1,
+	const fltx4& b2,
+	const fltx4& b3,
 	fltx4& out0,
 	fltx4& out1,
 	fltx4& out2,

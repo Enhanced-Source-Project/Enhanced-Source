@@ -44,7 +44,33 @@ IMPLEMENT_CLIENTCLASS_DT( C_EnvProjectedTexture, DT_EnvProjectedTexture, CEnvPro
 	RecvPropInt(	 RECVINFO( m_nShadowQuality )	),
 	RecvPropFloat(	 RECVINFO( m_flProjectionSize )	),
 	RecvPropFloat(	 RECVINFO( m_flRotation )	),
+
+	RecvPropBool( RECVINFO( m_bUberlight ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fNearEdge, m_fNearEdge ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fFarEdge, m_fFarEdge ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fCutOn, m_fCutOn ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fCutOff, m_fCutOff ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fShearx, m_fShearx ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fSheary, m_fSheary ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fWidth, m_fWidth ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fWedge, m_fWedge ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fHeight, m_fHeight ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fHedge, m_fHedge ) ),
+	RecvPropFloat( RECVINFO_NAME( uberlight.m_fRoundness, m_fRoundness ) ),
+
+	RecvPropBool( RECVINFO( m_bVolumetric ) ),
+	RecvPropFloat( RECVINFO( m_flNoiseStrength ) ),
+	RecvPropInt( RECVINFO( m_nNumPlanes ) ),
+	RecvPropFloat( RECVINFO( m_flPlaneOffset ) ),
+	RecvPropFloat( RECVINFO( m_flVolumetricIntensity ) ),
+
+	RecvPropFloat( RECVINFO( m_flAttenConst ) ),
+	RecvPropFloat( RECVINFO( m_flAttenLinear ) ),
+	RecvPropFloat( RECVINFO( m_flAttenQuadratic ) ),
+	RecvPropFloat( RECVINFO( m_flAttenFarZ ) ),
 END_RECV_TABLE()
+
+LINK_ENTITY_TO_CLASS( env_projectedtexture, C_EnvProjectedTexture );
 
 C_EnvProjectedTexture *C_EnvProjectedTexture::Create( )
 {
@@ -151,7 +177,6 @@ void C_EnvProjectedTexture::OnDataChanged( DataUpdateType_t updateType )
 	BaseClass::OnDataChanged( updateType );
 }
 
-static ConVar asw_perf_wtf("asw_perf_wtf", "0", FCVAR_DEVELOPMENTONLY, "Disable updating of projected shadow textures from UpdateLight" );
 void C_EnvProjectedTexture::UpdateLight( void )
 {
 	VPROF("C_EnvProjectedTexture::UpdateLight");
@@ -190,7 +215,7 @@ void C_EnvProjectedTexture::UpdateLight( void )
 		return;
 	}
 
-	if ( m_LightHandle == CLIENTSHADOW_INVALID_HANDLE || m_hTargetEntity != NULL || m_bForceUpdate )
+	if ( m_LightHandle == CLIENTSHADOW_INVALID_HANDLE || m_hTargetEntity != NULL || m_bForceUpdate || ( m_bVolumetric && m_flNoiseStrength > 0.f ) )
 	{
 		Vector vForward, vRight, vUp, vPos = GetAbsOrigin();
 		FlashlightState_t state;
@@ -226,21 +251,17 @@ void C_EnvProjectedTexture::UpdateLight( void )
 			}
 			else
 			{
-				vForward = m_hTargetEntity->GetAbsOrigin() - GetAbsOrigin();
-				VectorNormalize( vForward );
-
-				// JasonM - unimplemented
-				Assert (0);
-
-				//Quaternion q = DirectionToOrientation( dir );
-
-
-				//
-				// JasonM - set up vRight, vUp
-				//
-
-				//			VectorNormalize( vRight );
-				//			VectorNormalize( vUp );
+				QAngle vecAngles;
+				if ( m_hTargetEntity == NULL )
+				{
+					vecAngles = GetAbsAngles();
+				}
+				else
+				{
+					const Vector &vecToTarget = m_hTargetEntity->GetAbsOrigin() - GetAbsOrigin();
+					VectorAngles( vecToTarget, vecAngles );
+				}
+				AngleVectors( vecAngles, &vForward, &vRight, &vUp );
 			}
 		}
 		else
@@ -281,7 +302,7 @@ void C_EnvProjectedTexture::UpdateLight( void )
 				VectorAligned( m_flFarZ,  halfWidthFar,  halfWidthFar), VectorAligned( m_flFarZ, -halfWidthFar,  halfWidthFar) 
 			};
 
-			matrix3x4_t matOrientation( vForward, -vRight, vUp, vPos );
+			const matrix3x4_t matOrientation( vForward, -vRight, vUp, vPos );
 
 			enum
 			{
@@ -335,17 +356,33 @@ void C_EnvProjectedTexture::UpdateLight( void )
 			}
 		}
 
+		if ( m_bUberlight )
+		{
+			state.m_bUberlight = true;
+			state.m_uberlightState = uberlight;
+		}
+
+		if ( m_bVolumetric )
+		{
+			state.m_bVolumetric = true;
+			state.m_flNoiseStrength = m_flNoiseStrength;
+			state.m_nNumPlanes = m_nNumPlanes;
+			state.m_flPlaneOffset = m_flPlaneOffset;
+			state.m_flVolumetricIntensity = m_flVolumetricIntensity;
+			state.m_flFlashlightTime = gpGlobals->curtime;
+		}
+
 		float flAlpha = m_flCurrentLinearFloatLightAlpha * ( 1.0f / 255.0f );
 
-		state.m_fQuadraticAtten = 0.0;
-		state.m_fLinearAtten = 100;
-		state.m_fConstantAtten = 0.0f;
-		state.m_FarZAtten = m_flFarZ;
+		state.m_fQuadraticAtten = m_flAttenQuadratic;
+		state.m_fLinearAtten = m_flAttenLinear;
+		state.m_fConstantAtten = m_flAttenConst;
+		state.m_FarZAtten = m_flAttenFarZ;
 		state.m_fBrightnessScale = m_flBrightnessScale;
 		state.m_Color[0] = m_CurrentLinearFloatLightColor.x * ( 1.0f / 255.0f ) * flAlpha;
 		state.m_Color[1] = m_CurrentLinearFloatLightColor.y * ( 1.0f / 255.0f ) * flAlpha;
 		state.m_Color[2] = m_CurrentLinearFloatLightColor.z * ( 1.0f / 255.0f ) * flAlpha;
-		state.m_Color[3] = 0.0f; // fixme: need to make ambient work m_flAmbient;
+		state.m_Color[3] = m_flAmbient; // fixme: need to make ambient work m_flAmbient;
 		state.m_flShadowSlopeScaleDepthBias = g_pMaterialSystemHardwareConfig->GetShadowSlopeScaleDepthBias();
 		state.m_flShadowDepthBias = g_pMaterialSystemHardwareConfig->GetShadowDepthBias();
 		state.m_bEnableShadows = m_bEnableShadows;

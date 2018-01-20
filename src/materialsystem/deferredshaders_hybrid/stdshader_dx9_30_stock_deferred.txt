@@ -1,0 +1,15 @@
+lightmappedgeneric_deferred_ps30.fxc
+lightmappedgeneric_deferred_vs30.fxc
+
+vertexlit_and_unlit_generic_bump_deferred_ps30.fxc
+vertexlit_and_unlit_generic_deferred_ps30.fxc
+phong_deferred_ps30.fxc
+
+core_ps30.fxc
+core_vs30.fxc
+
+watercheap_ps30.fxc
+watercheap_vs30.fxc
+
+water_ps30.fxc
+water_vs30.fxc

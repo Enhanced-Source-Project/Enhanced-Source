@@ -110,6 +110,15 @@ public:
 		return m_pDataOut - m_Data;
 	}
 
+#ifdef DEFERRED
+	FORCEINLINE uint8 *Copy()
+	{
+		int size = Size();
+		uint8 *tmp = new uint8[ size ];
+		Q_memcpy( tmp, m_Data, size );
+		return  tmp;
+	}
+#endif // DEFERRED_ENABLED
 };
 
 
@@ -514,6 +523,13 @@ public:
 		this->m_Storage.PutInt( CBCMD_SET_VERTEX_SHADER_NEARZFARZ_STATE );
 		this->m_Storage.PutInt( iRegNum );
 	}
+	
+#ifdef DEFERRED
+	FORCEINLINE uint8 *Copy( void )
+	{
+		return m_Storage.Copy();
+	}
+#endif // DEFERRED_ENABLED
 };
 
 

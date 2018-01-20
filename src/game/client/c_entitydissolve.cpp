@@ -55,7 +55,7 @@ PMaterialHandle g_Material_AR2Glow = NULL;
 C_EntityDissolve::C_EntityDissolve( void )
 {
 	m_bLinkedToServerEnt = true;
-	m_pController = false;
+	m_pController = NULL;
 	m_bCoreExplode = false;
 }
 

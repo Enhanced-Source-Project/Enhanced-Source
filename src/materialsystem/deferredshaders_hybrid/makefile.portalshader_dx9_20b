@@ -1,0 +1,108 @@
+default:  fxctmp9_tmp\Bloom_ps20.inc shaders\fxc\Bloom_ps20.vcs fxctmp9_tmp\Bloom_ps20b.inc shaders\fxc\Bloom_ps20b.vcs fxctmp9_tmp\screenspaceeffect_vs20.inc shaders\fxc\screenspaceeffect_vs20.vcs fxctmp9_tmp\portal_ps20.inc shaders\fxc\portal_ps20.vcs fxctmp9_tmp\portal_ps20b.inc shaders\fxc\portal_ps20b.vcs fxctmp9_tmp\portal_vs20.inc shaders\fxc\portal_vs20.vcs fxctmp9_tmp\portalstaticoverlay_ps20.inc shaders\fxc\portalstaticoverlay_ps20.vcs fxctmp9_tmp\portalstaticoverlay_ps20b.inc shaders\fxc\portalstaticoverlay_ps20b.vcs fxctmp9_tmp\portalstaticoverlay_vs20.inc shaders\fxc\portalstaticoverlay_vs20.vcs fxctmp9_tmp\portal_refract_vs20.inc shaders\fxc\portal_refract_vs20.vcs fxctmp9_tmp\portal_refract_ps20.inc shaders\fxc\portal_refract_ps20.vcs fxctmp9_tmp\portal_refract_ps20b.inc shaders\fxc\portal_refract_ps20b.vcs
+
+fxctmp9_tmp\Bloom_ps20.inc shaders\fxc\Bloom_ps20.vcs: Bloom_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_ps_fxc.h common_hlsl_cpp_consts.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." Bloom_ps2x.fxc-----Bloom_ps20
+	echo Bloom_ps2x.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\Bloom_ps20b.inc shaders\fxc\Bloom_ps20b.vcs: Bloom_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_ps_fxc.h common_hlsl_cpp_consts.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." Bloom_ps2x.fxc-----Bloom_ps20b
+	echo Bloom_ps2x.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\screenspaceeffect_vs20.inc shaders\fxc\screenspaceeffect_vs20.vcs: screenspaceeffect_vs20.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_vs_fxc.h common_fxc.h common_hlsl_cpp_consts.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." screenspaceeffect_vs20.fxc-----screenspaceeffect_vs20
+	echo screenspaceeffect_vs20.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+
+fxctmp9_tmp\portal_ps20.inc shaders\fxc\portal_ps20.vcs: portal_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_fxc.h common_hlsl_cpp_consts.h shader_constant_register_map.h common_vertexlitgeneric_dx9.h common_ps_fxc.h common_pragmas.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portal_ps2x.fxc-----portal_ps20
+	echo portal_ps2x.fxc>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+
+fxctmp9_tmp\portal_ps20b.inc shaders\fxc\portal_ps20b.vcs: portal_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_fxc.h common_hlsl_cpp_consts.h shader_constant_register_map.h common_vertexlitgeneric_dx9.h common_ps_fxc.h common_pragmas.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portal_ps2x.fxc-----portal_ps20b
+	echo portal_ps2x.fxc>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+
+fxctmp9_tmp\portal_vs20.inc shaders\fxc\portal_vs20.vcs: portal_vs20.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_fxc.h common_hlsl_cpp_consts.h common_pragmas.h common_vs_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portal_vs20.fxc-----portal_vs20
+	echo portal_vs20.fxc>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\portalstaticoverlay_ps20.inc shaders\fxc\portalstaticoverlay_ps20.vcs: portalstaticoverlay_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_ps_fxc.h common_vertexlitgeneric_dx9.h common_fxc.h shader_constant_register_map.h common_hlsl_cpp_consts.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portalstaticoverlay_ps2x.fxc-----portalstaticoverlay_ps20
+	echo portalstaticoverlay_ps2x.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+
+fxctmp9_tmp\portalstaticoverlay_ps20b.inc shaders\fxc\portalstaticoverlay_ps20b.vcs: portalstaticoverlay_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_ps_fxc.h common_vertexlitgeneric_dx9.h common_fxc.h shader_constant_register_map.h common_hlsl_cpp_consts.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portalstaticoverlay_ps2x.fxc-----portalstaticoverlay_ps20b
+	echo portalstaticoverlay_ps2x.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+
+fxctmp9_tmp\portalstaticoverlay_vs20.inc shaders\fxc\portalstaticoverlay_vs20.vcs: portalstaticoverlay_vs20.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_hlsl_cpp_consts.h common_fxc.h common_vs_fxc.h common_pragmas.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portalstaticoverlay_vs20.fxc-----portalstaticoverlay_vs20
+	echo portalstaticoverlay_vs20.fxc>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+
+fxctmp9_tmp\portal_refract_vs20.inc shaders\fxc\portal_refract_vs20.vcs: portal_refract_vs20.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_vs_fxc.h common_fxc.h common_hlsl_cpp_consts.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portal_refract_vs20.fxc-----portal_refract_vs20
+	echo portal_refract_vs20.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+
+fxctmp9_tmp\portal_refract_ps20.inc shaders\fxc\portal_refract_ps20.vcs: portal_refract_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_ps_fxc.h common_vertexlitgeneric_dx9.h common_hlsl_cpp_consts.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portal_refract_ps2x.fxc-----portal_refract_ps20
+	echo portal_refract_ps2x.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\portal_refract_ps20b.inc shaders\fxc\portal_refract_ps20b.vcs: portal_refract_ps2x.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_ps_fxc.h common_vertexlitgeneric_dx9.h common_hlsl_cpp_consts.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." portal_refract_ps2x.fxc-----portal_refract_ps20b
+	echo portal_refract_ps2x.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+

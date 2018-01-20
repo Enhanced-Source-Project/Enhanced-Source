@@ -1,8 +1,6 @@
 #ifndef DEFERRED_SHARED_COMMON
 #define DEFERRED_SHARED_COMMON
 
-#include "cbase.h"
-
 #define FOR_EACH_VEC_FAST( vecType, vecName, keyName ) { vecType *keyName##_p = vecName.Base();\
 	for ( int keyName##_size = vecName.Count(); keyName##_size > 0; keyName##_size--, keyName##_p++ )\
 	{ vecType keyName = *keyName##_p;
@@ -97,7 +95,11 @@ void UTIL_StringToIntArray( int *pVector, int count, const char *pString );
 #define NETWORK_MASK_COOKIE		0x007F
 #define NETWORK_MASK_SEED		0xFFFF
 
+#ifdef DEFERRED_HYBRID
+#include "../../materialsystem/deferredshaders_hybrid/deferred_global_common.h"
+#else
 #include "../../materialsystem/deferredshaders/deferred_global_common.h"
+#endif
 
 enum LIGHT_PARAM_ID
 {

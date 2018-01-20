@@ -1,0 +1,98 @@
+default:  fxctmp9_tmp\vertexlit_and_unlit_generic_vs30.inc shaders\fxc\vertexlit_and_unlit_generic_vs30.vcs fxctmp9_tmp\vertexlit_and_unlit_generic_bump_vs30.inc shaders\fxc\vertexlit_and_unlit_generic_bump_vs30.vcs fxctmp9_tmp\vertexlit_and_unlit_generic_bump_ps30.inc shaders\fxc\vertexlit_and_unlit_generic_bump_ps30.vcs fxctmp9_tmp\multiblend_vs30.inc shaders\fxc\multiblend_vs30.vcs fxctmp9_tmp\multiblend_ps30.inc shaders\fxc\multiblend_ps30.vcs fxctmp9_tmp\lightmappedgeneric_vs30.inc shaders\fxc\lightmappedgeneric_vs30.vcs fxctmp9_tmp\flora_ps30.inc shaders\fxc\flora_ps30.vcs fxctmp9_tmp\flora_vs30.inc shaders\fxc\flora_vs30.vcs
+
+fxctmp9_tmp\vertexlit_and_unlit_generic_vs30.inc shaders\fxc\vertexlit_and_unlit_generic_vs30.vcs: vertexlit_and_unlit_generic_vs30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_vs_fxc.h common_fog_vs_supportsvertexfog_fxc.h common_hlsl_cpp_consts.h common_fxc.h tree_sway.h fow_vs_fxc.h tessellation_vs_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." vertexlit_and_unlit_generic_vs30.fxc-----vertexlit_and_unlit_generic_vs30
+	echo vertexlit_and_unlit_generic_vs30.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_fog_vs_supportsvertexfog_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo tree_sway.h>> filestocopy.txt
+	echo fow_vs_fxc.h>> filestocopy.txt
+	echo tessellation_vs_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\vertexlit_and_unlit_generic_bump_vs30.inc shaders\fxc\vertexlit_and_unlit_generic_bump_vs30.vcs: vertexlit_and_unlit_generic_bump_vs30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl tessellation_vs_fxc.h common_pragmas.h common_fxc.h common_hlsl_cpp_consts.h common_fog_vs_supportsvertexfog_fxc.h common_vs_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." vertexlit_and_unlit_generic_bump_vs30.fxc-----vertexlit_and_unlit_generic_bump_vs30
+	echo vertexlit_and_unlit_generic_bump_vs30.fxc>> filestocopy.txt
+	echo tessellation_vs_fxc.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fog_vs_supportsvertexfog_fxc.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\vertexlit_and_unlit_generic_bump_ps30.inc shaders\fxc\vertexlit_and_unlit_generic_bump_ps30.vcs: vertexlit_and_unlit_generic_bump_ps30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_fog_ps_supportsvertexfog_fxc.h common_vertexlitgeneric_dx9.h common_pragmas.h common_fxc.h shader_constant_register_map.h common_hlsl_cpp_consts.h common_ps_fxc.h common_flashlight_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." vertexlit_and_unlit_generic_bump_ps30.fxc-----vertexlit_and_unlit_generic_bump_ps30
+	echo vertexlit_and_unlit_generic_bump_ps30.fxc>> filestocopy.txt
+	echo common_fog_ps_supportsvertexfog_fxc.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_flashlight_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\multiblend_vs30.inc shaders\fxc\multiblend_vs30.vcs: multiblend_vs30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h fow_vs_fxc.h common_hlsl_cpp_consts.h common_vs_fxc.h common_fxc.h common_fog_vs_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." multiblend_vs30.fxc-----multiblend_vs30
+	echo multiblend_vs30.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo fow_vs_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_fog_vs_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\multiblend_ps30.inc shaders\fxc\multiblend_ps30.vcs: multiblend_ps30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_flashlight_fxc.h common_ps_fxc.h common_lighting_fxc.h common_deferred_fxc.h common_fog_ps_fxc.h shader_constant_register_map.h common_fxc.h common_shadowmapping_fxc.h common_hlsl_cpp_consts.h deferred_global_common.h fow_ps_fxc.h common_pragmas.h common_vertexlitgeneric_dx9.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." multiblend_ps30.fxc-----multiblend_ps30
+	echo multiblend_ps30.fxc>> filestocopy.txt
+	echo common_flashlight_fxc.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_lighting_fxc.h>> filestocopy.txt
+	echo common_deferred_fxc.h>> filestocopy.txt
+	echo common_fog_ps_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_shadowmapping_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo deferred_global_common.h>> filestocopy.txt
+	echo fow_ps_fxc.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+
+fxctmp9_tmp\lightmappedgeneric_vs30.inc shaders\fxc\lightmappedgeneric_vs30.vcs: lightmappedgeneric_vs30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_lightmappedgeneric_fxc.h common_hlsl_cpp_consts.h common_fog_vs_supportsvertexfog_fxc.h common_vs_fxc.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." lightmappedgeneric_vs30.fxc-----lightmappedgeneric_vs30
+	echo lightmappedgeneric_vs30.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_lightmappedgeneric_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fog_vs_supportsvertexfog_fxc.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\flora_ps30.inc shaders\fxc\flora_ps30.vcs: flora_ps30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_ps_fxc.h common_lighting_fxc.h common_fxc.h shader_constant_register_map.h common_deferred_fxc.h common_hlsl_cpp_consts.h common_shadowmapping_fxc.h deferred_global_common.h common_fog_ps_supportsvertexfog_fxc.h common_vertexlitgeneric_dx9.h common_pragmas.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." flora_ps30.fxc-----flora_ps30
+	echo flora_ps30.fxc>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_lighting_fxc.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_deferred_fxc.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_shadowmapping_fxc.h>> filestocopy.txt
+	echo deferred_global_common.h>> filestocopy.txt
+	echo common_fog_ps_supportsvertexfog_fxc.h>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+
+fxctmp9_tmp\flora_vs30.inc shaders\fxc\flora_vs30.vcs: flora_vs30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h tree_sway.h common_hlsl_cpp_consts.h common_vs_fxc.h common_fog_vs_supportsvertexfog_fxc.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." flora_vs30.fxc-----flora_vs30
+	echo flora_vs30.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo tree_sway.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_fog_vs_supportsvertexfog_fxc.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+

@@ -1,7 +1,6 @@
 #ifndef FLASHLIGHTEFFECT_DEFERRED_H
 #define FLASHLIGHTEFFECT_DEFERRED_H
 
-#include "cbase.h"
 #include "flashlighteffect.h"
 
 struct def_light_t;

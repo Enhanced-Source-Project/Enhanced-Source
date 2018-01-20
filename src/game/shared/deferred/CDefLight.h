@@ -1,7 +1,6 @@
 #ifndef CDEF_LIGHT_H
 #define CDEF_LIGHT_H
 
-#include "cbase.h"
 #include "deferred_shared_common.h"
 
 #ifdef CLIENT_DLL

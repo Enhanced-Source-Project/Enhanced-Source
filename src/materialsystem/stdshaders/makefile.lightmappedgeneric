@@ -1,0 +1,12 @@
+default:  fxctmp9_tmp\lightmappedgeneric_vs30.inc shaders\fxc\lightmappedgeneric_vs30.vcs
+
+fxctmp9_tmp\lightmappedgeneric_vs30.inc shaders\fxc\lightmappedgeneric_vs30.vcs: lightmappedgeneric_vs20.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_hlsl_cpp_consts.h common_fog_vs_supportsvertexfog_fxc.h common_vs_fxc.h common_lightmappedgeneric_fxc.h common_pragmas.h common_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." lightmappedgeneric_vs20.fxc-----lightmappedgeneric_vs30
+	echo lightmappedgeneric_vs20.fxc>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fog_vs_supportsvertexfog_fxc.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+	echo common_lightmappedgeneric_fxc.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+

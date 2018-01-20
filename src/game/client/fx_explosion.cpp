@@ -19,6 +19,11 @@
 #include "fx_line.h"
 #include "fx_water.h"
 
+#ifdef DEFERRED
+#include "cdeferred_manager_client.h"
+#include "deferred_shared_common.h"
+#endif // DEFERRED
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -728,16 +733,50 @@ void C_BaseExplosionEffect::CreateDynamicLight( void )
 {
 	if ( m_fFlags & TE_EXPLFLAG_DLIGHT )
 	{
-		dlight_t *dl = effects->CL_AllocDlight( 0 );
-		
-		VectorCopy (m_vecOrigin, dl->origin);
-		
-		dl->decay	= 200;
-		dl->radius	= 255 * m_flScale;
-		dl->color.r = 255;
-		dl->color.g = 220;
-		dl->color.b = 128;
-		dl->die		= gpGlobals->curtime + 0.1f;
+#ifdef DEFERRED
+		if ( GetDeferredManager()->IsDeferredRenderingEnabled() == false )
+#endif // DEFERRED
+		{
+			dlight_t *dl = effects->CL_AllocDlight( 0 );
+
+			VectorCopy( m_vecOrigin, dl->origin );
+
+			dl->decay = 200;
+			dl->radius = 255 * m_flScale;
+			dl->color.r = 255;
+			dl->color.g = 220;
+			dl->color.b = 128;
+			dl->die = gpGlobals->curtime + 0.1f;
+		}
+#ifdef DEFERRED
+		else
+		{
+			if ( GetLightingManager()->CountTempLights() >= 4 )
+				return;
+
+			def_light_temp_t *l = new def_light_temp_t( false, 0.3f );
+
+			l->ang = vec3_angle;
+			l->pos = m_vecOrigin;
+			l->pos.z += 64.0f;
+
+			l->col_diffuse = Vector( 0.964705882f, 0.82745098f, 0.403921569f ); //GetColor_Diffuse();
+
+			l->flRadius = m_flScale * 1024;
+			l->flFalloffPower = 1.0f;
+
+			l->iVisible_Dist = 1024.0f;
+			l->iVisible_Range = 1024.0f;
+			l->iShadow_Dist = 512.0f;
+			l->iShadow_Range = 512.0f;
+
+			l->iFlags >>= DEFLIGHTGLOBAL_FLAGS_MAX_SHARED_BITS;
+			l->iFlags <<= DEFLIGHTGLOBAL_FLAGS_MAX_SHARED_BITS;
+			l->iFlags |= DEFLIGHT_SHADOW_ENABLED;
+
+			GetLightingManager()->AddTempLight( l );
+		}
+#endif // DEFERRED
 	}
 }
 

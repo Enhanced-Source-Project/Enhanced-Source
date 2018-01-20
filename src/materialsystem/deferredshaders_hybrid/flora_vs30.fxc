@@ -1,0 +1,149 @@
+//========== Copyright (c) Valve Corporation, All rights reserved. ==========//
+// STATIC: "VERTEXCOLOR"			    "0..1"
+// STATIC: "TREESWAY"					"0..2"
+
+// DYNAMIC:		"SKINNING"				"0..1"
+// DYNAMIC:		"COMPRESSED_VERTS"		"0..1"
+
+#include "common_vs_fxc.h"
+#include "common_fog_vs_supportsvertexfog_fxc.h"
+
+//const float4 g_vecLightVec_Forward				: register( SHADER_SPECIFIC_CONST_0 );
+const float4 g_vecLightVec_Diffuse				: register( SHADER_SPECIFIC_CONST_2 );
+//const float4 g_vecLightVec_Ambient				: register( SHADER_SPECIFIC_CONST_3 );
+
+const float4 g_vMiscParams1					: register( SHADER_SPECIFIC_CONST_4 );
+const float4 g_vMiscParams2					: register( SHADER_SPECIFIC_CONST_5 );
+const float4 g_vMiscParams3					: register( SHADER_SPECIFIC_CONST_6 );
+const float4 g_vMiscParams4					: register( SHADER_SPECIFIC_CONST_7 );
+const float4 g_vMiscParams5					: register( SHADER_SPECIFIC_CONST_8 );
+
+static const bool g_bSkinning		= SKINNING ? true : false;
+static const bool g_bHalfLambert	= false;
+static const int  g_FogType			= DOWATERFOG;
+
+#if ( TREESWAY )
+	#define g_flFastSwaySpeedScale g_vMiscParams1.x
+	#define g_flScrumbleFalloffCurve g_vMiscParams1.y
+	#define g_flSwayFalloffCurve g_vMiscParams1.z
+	#define g_flScrumbleSpeed g_vMiscParams1.w
+
+	#define g_flWindSpeedLerpStart g_vMiscParams2.x
+	#define g_flWindSpeedLerpEnd g_vMiscParams2.y
+
+	#define g_flHeight g_vMiscParams3.x
+	#define g_flStartHeight g_vMiscParams3.y
+	#define g_flRadius g_vMiscParams3.z
+	#define g_flStartRadius g_vMiscParams3.w
+
+	#define g_flSwaySpeed g_vMiscParams4.x
+	#define g_flSwayIntensity g_vMiscParams4.y
+	#define g_flScrumbleWaveCount g_vMiscParams4.z
+	#define g_flScrumbleIntensity g_vMiscParams4.w
+
+	#define g_flTime g_vMiscParams5.y
+	#define g_vWindDir g_vMiscParams5.zw
+#endif
+
+struct VS_INPUT
+{
+	float4 vPos							: POSITION;
+	float4 vNormal						: NORMAL;
+	float2 vBaseTexCoord				: TEXCOORD0;
+
+	float4 vBoneWeights					: BLENDWEIGHT;
+	float4 vBoneIndices					: BLENDINDICES;
+	
+#if VERTEXCOLOR
+	float4 vColor			: COLOR0;
+#endif
+
+	// Position and normal/tangent deltas
+	float3 vPosFlex			: POSITION1;
+	float3 vNormalFlex		: NORMAL1;
+	#ifdef SHADER_MODEL_VS_3_0
+		float vVertexID			: POSITION2;
+	#endif
+};
+
+struct VS_OUTPUT
+{
+	float4 vProjPos							: POSITION;	
+	float2 vBaseTexCoord					: TEXCOORD0;	// xy = blend 1 coord
+	float4 worldPos_projPosZ				: TEXCOORD1;
+
+#if ( !HARDWAREFOGBLEND && !DOPIXELFOG )
+	float4 worldVertToEyeVector_fogFactorW : TEXCOORD3;
+#endif 
+
+	float4 color							: TEXCOORD6;
+};
+
+#include "tree_sway.h"
+
+VS_OUTPUT main( const VS_INPUT v )
+{
+	VS_OUTPUT o;
+
+	float4 vPosition = v.vPos;
+
+	float3 vObjNormal;
+	DecompressVertex_Normal( v.vNormal, vObjNormal );
+
+	float3 vWorldPos;
+
+	ApplyMorph( v.vPosFlex, v.vNormalFlex, vPosition.xyz, vObjNormal );
+
+	#if ( TREESWAY )
+	{
+		vPosition.xyz = ComputeTreeSway( vPosition.xyz, g_flTime );
+	}
+	#endif
+
+	SkinPosition( g_bSkinning, vPosition,
+		v.vBoneWeights, v.vBoneIndices,
+		vWorldPos );
+
+	//SkinPositionAndNormal( g_bSkinning, v.vPos, vObjNormal, v.vBoneWeights, v.vBoneIndices, vWorldPos, vObjNormal );
+
+	o.vProjPos = mul( float4( vWorldPos, 1 ), cViewProj );
+
+	o.worldPos_projPosZ.w = o.vProjPos.z;
+	o.worldPos_projPosZ.xyz = vWorldPos;
+
+	o.vBaseTexCoord.xy = v.vBaseTexCoord;
+	
+#if ( VERTEXCOLOR )
+	// Assume that this is unlitgeneric if you are using vertex color.
+	o.color.rgb = GammaToLinear( v.vColor.rgb );
+	o.color.a = v.vColor.a;
+#else
+	//float3 vStaticLight = float3(0,0,0);
+	//o.color.xyz = DoLighting( vWorldPos, normalize(g_vecLightVec_Forward.xyz), v.vStaticLight, false, bDynamicLight, g_bHalfLambert );
+	//o.color.xyz = g_vecLightVec_Forward.xyz;
+
+	// Just do one diffuse color for flora
+	/*cLightInfo[0].color = float4( g_vecLightVec_Diffuse.xyz, 0 ); //float4( 0.94, 0.725, 0.50, 1 ); // {xyz} is color	w is light type code (see comment below)
+	cLightInfo[0].dir = float4( normalize(-g_vecLightVec_Forward.xyz), 0 ); //float4( 0, 0, -1, 1 ); // {xyz} is dir		w is light type code
+	cLightInfo[0].pos = float4( 0, 0, 0, 1 );
+	cLightInfo[0].spotParams = float4( 0, 0, 0, 0 );
+	cLightInfo[0].atten = float4( 1, 0, 0, 0 );
+	o.color.xyz = DoLightInternal( vWorldPos, float3(0, 0, 1), 0, false );
+	o.color.a = 0;
+
+	o.color.xyz += g_vecLightVec_Ambient.xyz;*/
+
+	// Directly set one time computed lighting value. Good enough for flora.
+	o.color.xyz = g_vecLightVec_Diffuse.xyz;
+	o.color.a = 0;
+#endif // VERTEXCOLOR
+
+	#if ( !DOPIXELFOG && !HARDWAREFOGBLEND )
+	{
+		o.worldVertToEyeVector_fogFactorW.xyz = 0;
+		o.worldVertToEyeVector_fogFactorW.w = CalcNonFixedFunctionFog( vWorldPos, g_FogType );
+	}
+	#endif
+
+	return o;
+}

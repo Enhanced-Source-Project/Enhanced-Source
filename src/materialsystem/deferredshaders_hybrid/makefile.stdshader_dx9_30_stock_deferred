@@ -1,0 +1,22 @@
+default:  fxctmp9_tmp\water_ps30.inc shaders\fxc\water_ps30.vcs fxctmp9_tmp\water_vs30.inc shaders\fxc\water_vs30.vcs
+
+fxctmp9_tmp\water_ps30.inc shaders\fxc\water_ps30.vcs: water_ps30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_vertexlitgeneric_dx9.h common_hlsl_cpp_consts.h common_fog_ps_fxc.h shader_constant_register_map.h common_ps_fxc.h common_fxc.h common_pragmas.h common_flashlight_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." water_ps30.fxc-----water_ps30
+	echo water_ps30.fxc>> filestocopy.txt
+	echo common_vertexlitgeneric_dx9.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fog_ps_fxc.h>> filestocopy.txt
+	echo shader_constant_register_map.h>> filestocopy.txt
+	echo common_ps_fxc.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_flashlight_fxc.h>> filestocopy.txt
+
+fxctmp9_tmp\water_vs30.inc shaders\fxc\water_vs30.vcs: water_vs30.fxc ..\..\devtools\bin\updateshaders.pl ..\..\devtools\bin\fxc_prep.pl common_pragmas.h common_hlsl_cpp_consts.h common_fxc.h common_vs_fxc.h
+	perl ..\..\devtools\bin\fxc_prep.pl   -source "..\.." water_vs30.fxc-----water_vs30
+	echo water_vs30.fxc>> filestocopy.txt
+	echo common_pragmas.h>> filestocopy.txt
+	echo common_hlsl_cpp_consts.h>> filestocopy.txt
+	echo common_fxc.h>> filestocopy.txt
+	echo common_vs_fxc.h>> filestocopy.txt
+

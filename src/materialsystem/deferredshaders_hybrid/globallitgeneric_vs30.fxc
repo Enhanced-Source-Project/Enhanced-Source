@@ -1,0 +1,82 @@
+//========== Copyright (c) Valve Corporation, All rights reserved. ==========//
+//
+// Purpose: 
+//
+//===========================================================================//
+
+#include "common_fog_vs_fxc.h"
+
+// STATIC: "FOW"				"0..1"
+// STATIC: "VERTEXCOLOR"			"0..1"
+
+#include "common_vs_fxc.h"
+#include "fow_vs_fxc.h"
+
+const float4 g_vFoWWorldSize						: register( c26 );
+
+#if ( FLASHLIGHT == 1 )
+	
+const float4x4 g_FlashlightWorldToTexture : register( SHADER_SPECIFIC_CONST_0 );
+
+#endif
+
+
+struct VS_INPUT
+{
+	float3 vPos							: POSITION;
+	float4 vNormal						: NORMAL;
+	float2 vBaseTexCoord				: TEXCOORD0;
+	
+#if VERTEXCOLOR
+	float4 vColor			: COLOR0;
+#endif
+};
+
+struct VS_OUTPUT
+{
+	float4 vProjPos							: POSITION;	
+	float2 vBaseTexCoord					: TEXCOORD0;	// xy = blend 1 coord
+	float4 worldPos_projPosZ				: TEXCOORD1;
+#if FOW
+	float2 vFowCoord						: TEXCOORD2;
+#endif // FOW
+
+#if VERTEXCOLOR
+	float4 color							: TEXCOORD3;
+#endif
+};
+
+VS_OUTPUT main( const VS_INPUT v )
+{
+	VS_OUTPUT o;
+
+	float3 vObjNormal;
+	DecompressVertex_Normal( v.vNormal, vObjNormal );
+
+	float4 vProjPos;
+	float3 vWorldPos;
+
+	vProjPos = mul( float4( v.vPos, 1 ), cModelViewProj );
+	o.vProjPos = vProjPos;
+
+	vWorldPos = mul( float4( v.vPos, 1 ), cModel[0] );
+	
+	o.worldPos_projPosZ.w = vProjPos.z;
+	o.worldPos_projPosZ.xyz = vWorldPos;
+	
+#if ( FOW == 1 )
+	o.vFowCoord.xy = CalcFoWCoord( g_vFoWWorldSize, vWorldPos.xy );
+#endif
+
+	float3 vWorldNormal = mul( vObjNormal, ( float3x3 )cModel[0] );
+
+	o.vBaseTexCoord.xy = v.vBaseTexCoord;
+	
+#if ( VERTEXCOLOR )
+	// Assume that this is unlitgeneric if you are using vertex color.
+	o.color.rgb = GammaToLinear( v.vColor.rgb );
+	o.color.a = v.vColor.a;
+#endif // VERTEXCOLOR
+
+	return o;
+}

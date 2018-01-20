@@ -1,8 +1,6 @@
 #ifndef CDEF_LIGHT_CONTAINER_H
 #define CDEF_LIGHT_CONTAINER_H
 
-#include "cbase.h"
-
 class CDeferredLight;
 
 class CDeferredLightContainer : public CBaseEntity

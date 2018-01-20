@@ -1,0 +1,271 @@
+
+// STATIC:		"USEWORLDTRANSFORM"			"0..1"
+
+// DYNAMIC:		"NUM_SHADOWED_COOKIE"		"0..2"
+// DYNAMIC:		"NUM_SHADOWED"				"0..3"
+// DYNAMIC:		"NUM_COOKIE"				"0..3"
+// DYNAMIC:		"NUM_SIMPLE"				"0..10"
+
+// SKIP:		!$NUM_SHADOWED_COOKIE && !$NUM_SHADOWED && !$NUM_COOKIE && !$NUM_SIMPLE
+
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SHADOWED_COOKIE && $NUM_SHADOWED
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SHADOWED_COOKIE && $NUM_COOKIE
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SHADOWED_COOKIE && $NUM_SIMPLE
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SHADOWED && $NUM_COOKIE
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SHADOWED && $NUM_SIMPLE
+// SKIP:		$USEWORLDTRANSFORM && $NUM_COOKIE && $NUM_SIMPLE
+
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SHADOWED_COOKIE > 1
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SHADOWED > 1
+// SKIP:		$USEWORLDTRANSFORM && $NUM_COOKIE > 1
+// SKIP:		$USEWORLDTRANSFORM && $NUM_SIMPLE > 1
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+/*
+
+	Point lights:
+
+	position		x y z	radius			w
+	color diffuse	x y z	falloffpower	w
+	color ambient	x y z
+
+	** shadowed or cookied **
+							shadowscale		w
+
+	rotationmatrix	x y z
+					x y z
+					x y z
+
+*/
+
+
+sampler sNormals							: register( s0 );
+sampler sDepth								: register( s1 );
+
+const float3 g_vecViewOrigin				: register( c0 );
+const float4 g_vecShadowMappingTweaks_0		: register( c1 );
+const float4 g_vecShadowMappingTweaks_1		: register( c2 );
+
+#if USEWORLDTRANSFORM
+const float3 g_vecFrustumCenter		: register( c3 );
+const float3 g_vecFrustumRight		: register( c4 );
+const float3 g_vecFrustumUp			: register( c5 );
+const float2 g_vecHalfScreenTexel		: register( c6 );
+#endif
+
+
+sampler sMixedSampler[FREE_LIGHT_SAMPLERS]			: register( FIRST_LIGHT_SAMPLER_FXC );
+const float4 g_flMixedData[78]						: register( FIRST_SHARED_LIGHTDATA_CONSTANT_FXC ); // MAX_LIGHTDATA_CONSTANT_ROWS
+
+
+struct PS_INPUT
+{
+#if USEWORLDTRANSFORM
+	float3 vecProjXYW				: TEXCOORD0;
+#else
+	float2 vTexCoord				: TEXCOORD0;
+	float3 vecWorldRay				: TEXCOORD1;
+#endif
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+
+
+float4 DoPointLightBasic( const int index, float3 normal,
+	float3 vecWorldToLight, float lightToWorldDist,
+	float3 vecWorldRayInv,
+	bool litface, bool half_lambert,
+	float phong_exp )
+{
+#if DEFCFG_CHEAP_LIGHTS
+	float3 normalizedLightVec = vecWorldToLight / lightToWorldDist;
+	float litDot = dot( normalizedLightVec, normal );
+
+	float distFade = 1.0f - saturate( lightToWorldDist / g_flMixedData[ index ].w );
+	distFade *= distFade;
+
+	return float4( 0, saturate( litDot ) * distFade, 0, 0 );
+#else
+	float3 normalizedLightVec = vecWorldToLight / lightToWorldDist;
+	float3 flLitNormal = lerp( normal, dot( normal, normalizedLightVec ) * normal, litface );
+
+#if DEFCFG_BLINN_PHONG
+	float flSpecular = saturate( dot( normalize( vecWorldRayInv + normalizedLightVec ), flLitNormal ) );
+	flSpecular = pow( flSpecular, phong_exp ) * dot( vecWorldRayInv, flLitNormal );
+#else
+	float flSpecular = dot( reflect( -normalizedLightVec, flLitNormal ), vecWorldRayInv );
+	flSpecular = pow( flSpecular, phong_exp );
+#endif
+
+	float viewFwdDot = dot( normalizedLightVec, flLitNormal );
+	float litDot = lerp( viewFwdDot, viewFwdDot * 0.5f + 0.5f, half_lambert );
+
+	float lightAmount = saturate( litDot );
+
+	float distFade = 1.0f - saturate( lightToWorldDist / g_flMixedData[ index ].w );
+	distFade = pow( distFade, g_flMixedData[ index + 1 ].w );
+
+	return float4( litDot, lightAmount, flSpecular, distFade );
+#endif
+}
+
+
+
+
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	float2 vecTexcoords;
+	float3 vecWorldRay;
+
+#if USEWORLDTRANSFORM
+	vecTexcoords = In.vecProjXYW.xy / In.vecProjXYW.z;
+	vecWorldRay = g_vecFrustumCenter +
+		vecTexcoords.x * g_vecFrustumRight +
+		vecTexcoords.y * g_vecFrustumUp;
+	vecTexcoords = vecTexcoords * float2( 0.5f, -0.5f ) + 0.5f;
+	vecTexcoords += g_vecHalfScreenTexel;
+#else
+	vecTexcoords = In.vTexCoord;
+	vecWorldRay = In.vecWorldRay;
+#endif
+
+	float flDepth = tex2D( sDepth, vecTexcoords ).x;
+
+#if USEWORLDTRANSFORM
+	clip( min( flDepth - 0.1f, DEPTH_RECONSTRUCTION_LIMIT - flDepth ) );
+#else
+	clip( min( flDepth - 0.1f, DEPTH_RECONSTRUCTION_LIMIT_FULLSCREEN - flDepth ) );
+#endif
+
+	float3 worldPos = g_vecViewOrigin + vecWorldRay * flDepth;
+
+	float4 flNormalCtrl = tex2D( sNormals, vecTexcoords );
+	float3 flNormal = normalize( flNormalCtrl.xyz * 2.0f - 1.0f );
+
+	float phong_exp;
+	bool half_lambert, litface;
+#if DEFCFG_CHEAP_LIGHTS
+	phong_exp = half_lambert = litface = 0;
+#else
+	UnpackLightingControls( flNormalCtrl.a, phong_exp, half_lambert, litface );
+#endif
+
+	float3 worldRayInv = -vecWorldRay;
+#if DEFCFG_BLINN_PHONG == 0
+		worldRayInv = normalize( worldRayInv );
+#endif
+
+	float4 flLight = 0;
+
+	for ( int i = 0; i < NUM_SHADOWED_COOKIE; i++ )
+	{
+		int iDataIndex = i * NUM_CONSTS_POINT_ADVANCED;
+		int iSamplerIndex = i * 2;
+
+		float3 vecDelta = worldPos - g_flMixedData[ iDataIndex ].xyz;
+		float dist = length( vecDelta );
+
+		float3x3 matRotation = float3x3( g_flMixedData[ iDataIndex + 3 ].xyz,
+			g_flMixedData[ iDataIndex + 4 ].xyz,
+			g_flMixedData[ iDataIndex + 5 ].xyz );
+
+		float4 localLight = DoPointLightBasic( iDataIndex, flNormal,
+									-vecDelta, dist, worldRayInv,
+									litface, half_lambert, phong_exp );
+
+		vecDelta = mul3x3( vecDelta, matRotation );
+
+		localLight.y *= PerformDualParaboloidShadow( sMixedSampler[ iSamplerIndex ],
+			vecDelta, g_vecShadowMappingTweaks_0, g_vecShadowMappingTweaks_1,
+			dist, g_flMixedData[ iDataIndex ].w, g_flMixedData[ iDataIndex + 2 ].w );
+
+		flLight += DoLightFinalCookied( g_flMixedData[ iDataIndex + 1 ].xyz,
+			g_flMixedData[ iDataIndex + 2 ].xyz,
+			localLight, DoCubemapCookie( sMixedSampler[ iSamplerIndex + 1 ], vecDelta ) );
+	}
+
+	for ( int i = 0; i < NUM_SHADOWED; i++ )
+	{
+		int iDataIndex = NUM_SHADOWED_COOKIE * NUM_CONSTS_POINT_ADVANCED
+			+ i * NUM_CONSTS_POINT_ADVANCED;
+		int iSamplerIndex = NUM_SHADOWED_COOKIE * 2 + i;
+
+		float3 vecDelta = worldPos - g_flMixedData[ iDataIndex ].xyz;
+		float dist = length( vecDelta );
+
+		float3x3 matRotation = float3x3( g_flMixedData[ iDataIndex + 3 ].xyz,
+			g_flMixedData[ iDataIndex + 4 ].xyz,
+			g_flMixedData[ iDataIndex + 5 ].xyz );
+
+		float4 localLight = DoPointLightBasic( iDataIndex, flNormal,
+									-vecDelta, dist, worldRayInv,
+									litface, half_lambert, phong_exp );
+
+		vecDelta = mul3x3( vecDelta, matRotation );
+
+		localLight.y *= PerformDualParaboloidShadow( sMixedSampler[ iSamplerIndex ],
+			vecDelta, g_vecShadowMappingTweaks_0, g_vecShadowMappingTweaks_1,
+			dist, g_flMixedData[ iDataIndex ].w, g_flMixedData[ iDataIndex + 2 ].w );
+
+		flLight += DoLightFinal( g_flMixedData[ iDataIndex + 1 ].xyz,
+			g_flMixedData[ iDataIndex + 2 ].xyz,
+			localLight );
+	}
+
+	for ( int i = 0; i < NUM_COOKIE; i++ )
+	{
+		int iDataIndex = NUM_SHADOWED_COOKIE * NUM_CONSTS_POINT_ADVANCED
+			+ NUM_SHADOWED * NUM_CONSTS_POINT_ADVANCED
+			+ i * NUM_CONSTS_POINT_ADVANCED;
+		int iSamplerIndex = NUM_SHADOWED_COOKIE * 2 + NUM_SHADOWED + i;
+
+		float3 vecDelta = worldPos - g_flMixedData[ iDataIndex ].xyz;
+		float dist = length( vecDelta );
+
+		float3x3 matRotation = float3x3( g_flMixedData[ iDataIndex + 3 ].xyz,
+			g_flMixedData[ iDataIndex + 4 ].xyz,
+			g_flMixedData[ iDataIndex + 5 ].xyz );
+
+		float4 localLight = DoPointLightBasic( iDataIndex, flNormal,
+									-vecDelta, dist, worldRayInv,
+									litface, half_lambert, phong_exp );
+
+		vecDelta = mul3x3( vecDelta, matRotation );
+
+		flLight += DoLightFinalCookied( g_flMixedData[ iDataIndex + 1 ].xyz,
+			g_flMixedData[ iDataIndex + 2 ].xyz,
+			localLight, DoCubemapCookie( sMixedSampler[ iSamplerIndex ], vecDelta ) );
+	}
+
+	for ( int i = 0; i < NUM_SIMPLE; i++ )
+	{
+		int iDataIndex = NUM_SHADOWED_COOKIE * NUM_CONSTS_POINT_ADVANCED
+			+ NUM_SHADOWED * NUM_CONSTS_POINT_ADVANCED
+			+ NUM_COOKIE * NUM_CONSTS_POINT_ADVANCED
+			+ i * NUM_CONSTS_POINT_SIMPLE;
+
+		float3 vecDelta = worldPos - g_flMixedData[ iDataIndex ].xyz;
+		float dist = length( vecDelta );
+
+		float4 localLight = DoPointLightBasic( iDataIndex, flNormal,
+									-vecDelta, dist, worldRayInv,
+									litface, half_lambert, phong_exp );
+
+		flLight += DoLightFinal( g_flMixedData[ iDataIndex + 1 ].xyz,
+			g_flMixedData[ iDataIndex + 2 ].xyz,
+			localLight );
+	}
+
+	PS_OUTPUT Out;
+
+	Out.vColor_0 = WriteLighting( flLight );
+
+	return Out;
+}

@@ -61,10 +61,14 @@
 #ifdef PORTAL
 #include "c_prop_portal.h" //portal surface rendering functions
 #endif
-	
+
+#ifdef SHADEREDITOR
+#include "shadereditor/ivshadereditor.h"
+#endif // SHADEREDITOR
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-		  
+
 void ToolFramework_AdjustEngineViewport( int& x, int& y, int& width, int& height );
 bool ToolFramework_SetupEngineView( Vector &origin, QAngle &angles, float &fov );
 bool ToolFramework_SetupEngineMicrophone( Vector &origin, QAngle &angles );
@@ -333,6 +337,10 @@ void CViewRender::LevelInit( void )
 	g_pScreenSpaceEffects->InitScreenSpaceEffects( );
 
 	InitFadeData();
+
+#ifdef DEFERRED
+	ResetCascadeDelay();
+#endif // DEFERRED_ENABLED
 }
 
 //-----------------------------------------------------------------------------
@@ -984,6 +992,10 @@ void CViewRender::Render( vrect_t *rect )
 		}
 
 		render->SetMainView( view.origin, view.angles );
+
+#ifdef SHADEREDITOR
+		g_ShaderEditorSystem->InitialPreRender();
+#endif // SHADEREDITOR
 
 		int flags = (pPlayer == NULL) ? 0 : RENDERVIEW_DRAWHUD;
 		if ( drawViewModel )

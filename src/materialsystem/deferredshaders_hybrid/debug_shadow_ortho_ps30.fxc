@@ -1,0 +1,56 @@
+
+#include "common_ps_fxc.h"
+#include "common_deferred_fxc.h"
+
+sampler sNormals							: register( s0 );
+sampler sDepth								: register( s1 );
+
+sampler sShadowDepth						: register( s2 );
+
+const float3 g_vecViewOrigin					: register( c0 );
+const float3 g_vecWorldToLight					: register( c1 );
+
+const float4x3 g_matOrtho[2]					: register( c2 );
+const float4 g_vecUVTransform[2]				: register( c8 );
+const float3 g_vecSlopeData[2]					: register( c10 );
+const float4 g_vecFilterConfig_A[2]				: register( c12 );
+const float4 g_vecFilterConfig_B[2]				: register( c14 );
+
+
+struct PS_INPUT
+{
+	float2 vTexCoord				: TEXCOORD0;
+
+	float3 vecWorldRay				: TEXCOORD1;
+};
+
+struct PS_OUTPUT
+{
+	float4 vColor_0				:	COLOR0;
+};
+
+PS_OUTPUT main( const PS_INPUT In )
+{
+	PS_OUTPUT Out;
+
+	float flDepth = tex2D( sDepth, In.vTexCoord ).x;
+
+	Out.vColor_0 = 0;
+
+	if ( flDepth )
+	{
+		float3 flNormal = tex2D( sNormals, In.vTexCoord ).xyz * 2.0f - 1.0f;
+
+		float viewFwdDot = dot( g_vecWorldToLight.xyz, flNormal );
+		float3 worldPos = g_vecViewOrigin + In.vecWorldRay * flDepth;
+
+		float flLight = viewFwdDot * PerformCascadedShadow( sShadowDepth, worldPos, g_matOrtho, g_vecUVTransform, g_vecSlopeData,
+									g_vecFilterConfig_A, g_vecFilterConfig_B, flNormal, viewFwdDot );
+
+		Out.vColor_0 = flLight;
+	}
+	else
+		Out.vColor_0 = 1;
+
+	return Out;
+}

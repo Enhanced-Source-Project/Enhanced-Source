@@ -1,7 +1,6 @@
 #ifndef PROJECTABLE_FACTORY_H
 #define PROJECTABLE_FACTORY_H
 
-#include "cbase.h"
 #include "deferred/vgui/vgui_deferred.h"
 
 typedef CVGUIProjectable* (*pfnGetProjInstance)();
