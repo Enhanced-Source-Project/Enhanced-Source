@@ -123,6 +123,8 @@ void CBaseCombatWeapon::Operator_FrameUpdate( CBaseCombatCharacter *pOperator )
 #endif
 	}
 
+	DispatchAnimEvents(pOperator); // this was moved higher up in the function so NPCs do not get filtered out
+	
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	if ( pOwner == NULL )
 		return;
@@ -130,7 +132,7 @@ void CBaseCombatWeapon::Operator_FrameUpdate( CBaseCombatCharacter *pOperator )
 	CBaseViewModel *vm = pOwner->GetViewModel( m_nViewModelIndex );
 	if ( vm == NULL )
 		return;
-
+	/*
 	// HACK: Player weapon and view model often use the same mdl, which results
 	// in duplicate anim events.  For now, let the view model handle the events
 	// if they're the same, which is the preferred behavior in general.
@@ -140,7 +142,7 @@ void CBaseCombatWeapon::Operator_FrameUpdate( CBaseCombatCharacter *pOperator )
 	{
 		// Animation events are passed back to the weapon's owner/operator
 		DispatchAnimEvents( pOperator );
-	}
+	}*/
 
 	// Update and dispatch the viewmodel events
 	if ( vm != NULL )
