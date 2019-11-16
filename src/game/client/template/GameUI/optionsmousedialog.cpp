@@ -40,13 +40,10 @@ using namespace vgui;
 //-----------------------------------------------------------------------------
 COptionsMouseDialog::COptionsMouseDialog(vgui::Panel *parent ) : PropertyDialog(parent, "OptionsDialog")
 {
-	SetProportional( true );
+	SetScheme( scheme()->GetDefaultScheme() );
+	SetProportional( false );
 	SetDeleteSelfOnClose( true );
-	SetBounds( 
-		0, 
-		0, 
-		vgui::scheme()->GetProportionalScaledValueEx( GetScheme(), 512 ),
-		vgui::scheme()->GetProportionalScaledValueEx( GetScheme(), 415 ) );
+	SetBounds( 0, 0, 512, 415 );
 	SetSizeable( false );
 
 	// debug timing code, this function takes too long
