@@ -572,7 +572,7 @@ void LoadingProgress::SetupPoster( void )
 		bool bIsWidescreen = mat_xbox_iswidescreen.GetBool();
 #endif
 
-#ifdef GAMEIU_MULTI_LOADSCREENS
+#ifdef GAMEUI_MULTI_LOADSCREENS
 		const char *pszPosterImage = NULL;
 		int nChosenLoadingImage = RandomInt( 1, 4 );
 		switch( nChosenLoadingImage )

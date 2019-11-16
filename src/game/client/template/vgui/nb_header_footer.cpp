@@ -129,7 +129,7 @@ void CASW_Background_Movie::Update()
 	if ( nGameState != m_nLastGameState )
 	{
 
-#ifdef GAMEIU_MULTI_MOVIES
+#ifdef GAMEUI_MULTI_MOVIES
 		const char *pFilename = NULL;
 		int nChosenMovie = RandomInt( 0, 3 );
 		switch( nChosenMovie )
@@ -138,10 +138,10 @@ void CASW_Background_Movie::Update()
 			case 1: pFilename = "media/bg_02.bik"; break;
 			default:
 			case 2: pFilename = "media/bg_03.bik"; break;
-			case 3: pFilename = "media/bg_04.bik"; break;
+			//case 3: pFilename = "media/bg_04.bik"; break;
 		}
 #else
-		const char *pFilename = "media/bg_01.bik";
+		const char *pFilename = "media/bg_02.bik";
 #endif
 
 		if ( pFilename )

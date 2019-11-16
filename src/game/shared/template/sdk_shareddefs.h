@@ -41,10 +41,10 @@
 //========================
 // GAME UI
 //========================
-// GAMEIU_MULTI_MOVIES : Play random BIK movies in the main menu instead of one fixed one!
-#define GAMEIU_MULTI_MOVIES 
-// GAMEIU_MULTI_LOADSCREENS : Display a random loading screen no matter what map we are playing.
-#define GAMEIU_MULTI_LOADSCREENS
+// GAMEUI_MULTI_MOVIES : Play random BIK movies in the main menu instead of one fixed one!
+#define GAMEUI_MULTI_MOVIES 
+// GAMEUI_MULTI_LOADSCREENS : Display a random loading screen no matter what map we are playing.
+#define GAMEUI_MULTI_LOADSCREENS
 //------------------
 
 //========================
