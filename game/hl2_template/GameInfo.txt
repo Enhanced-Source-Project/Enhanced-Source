@@ -39,6 +39,9 @@
 			// Look for our content under our gamepath. pak01_dir will be read first, then loose files.
 			Game				|gameinfo_path|.
 			
+			// Load hl2 content (you can copy this from SFM, build your own, or ignore it)
+			Game				hl2
+			
 			// This has some resources.
 			Game				template_additional_content
 
