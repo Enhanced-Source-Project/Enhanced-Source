@@ -2184,6 +2184,9 @@ bool CBaseModPanel::IsBackgroundMusicPlaying()
 
 bool CBaseModPanel::StartBackgroundMusic( float fVol )
 {
+	if ( CommandLine()->FindParm( "-nostartupsound" ) )
+		return false;
+
 	if ( IsBackgroundMusicPlaying() )
 		return true;
 	
