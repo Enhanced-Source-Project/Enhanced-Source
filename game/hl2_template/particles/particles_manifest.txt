@@ -4,6 +4,7 @@ particles_manifest
 	"file"		"particles/asw_precipitation.pcf"
 	"file"		"particles/blood_impact.pcf"
 	"file"		"particles/burning_fx.pcf"
+	"file"		"particles/combineball.pcf"
 	"file"		"particles/default.pcf"
 	"file"		"!particles/error.pcf"
 	"file"		"particles/fire_01.pcf"
