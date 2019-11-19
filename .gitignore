@@ -28,6 +28,7 @@ ipch
 *.VC.db
 *.pdb
 *.mdmp
+src/.vs
 
 # shader files
 *.tmp
@@ -52,3 +53,12 @@ src/.vs/Game_Deferred-2013/v15/Solution.VC.db-wal
 src/.vs/Game_Deferred-2013/v15/Solution.VC.db-shm
 
 src/lib/public/shaderlib.lib
+game/bin/hlmv.rf
+
+game/*/cfg/config.cfg
+game/*/cfg/video.txt
+game/*/cfg/videodefaults.txt
+game/*/maps/graphs
+game/*/maps/soundcache
+game/*/SAVE
+game/*/modelsounds.cache
