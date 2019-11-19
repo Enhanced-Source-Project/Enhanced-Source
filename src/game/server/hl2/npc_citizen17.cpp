@@ -2903,7 +2903,7 @@ void CNPC_Citizen::UpdatePlayerSquad()
 				if ( bShouldAdd )
 				{
 					// @TODO (toml 05-25-04): probably everyone in a squad should be a candidate if one of them sees the player
-					AI_Waypoint_t *pPathToPlayer = pCitizen->GetPathfinder()->BuildRoute( pCitizen->GetAbsOrigin(), vPlayerPos, pPlayer, 5*12, NAV_NONE, true );
+					AI_Waypoint_t *pPathToPlayer = pCitizen->GetPathfinder()->BuildRoute( pCitizen->GetAbsOrigin(), vPlayerPos, pPlayer, 5*12, NAV_NONE, bits_BUILD_GET_CLOSE );
 					GetPathfinder()->UnlockRouteNodes( pPathToPlayer );
 
 					if ( !pPathToPlayer )
