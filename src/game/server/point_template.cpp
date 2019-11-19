@@ -345,7 +345,7 @@ bool CPointTemplate::CreateInstance( const Vector &vecOrigin, const QAngle &vecA
 
 		// Some templates have Entity I/O connecting the entities within the template.
 		// Unique versions of these templates need to be created whenever they're instanced.
-		if ( AllowNameFixup() && ( Templates_IndexRequiresEntityIOFixup( iTemplateIndex ) || m_ScriptScope.IsInitialized() ) )
+		if ( AllowNameFixup() && ( Templates_IndexRequiresEntityIOFixup( iTemplateIndex ) || ( m_ScriptScope.IsInitialized() && m_iszVScripts != NULL_STRING ) ) )
 		{
 			// This template requires instancing. 
 			// Create a new mapdata block and ask the template system to fill it in with
