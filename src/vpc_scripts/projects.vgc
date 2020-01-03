@@ -21,7 +21,7 @@ $Project "server"
 	"game\server\server_hl2_template.vpc"		[$HL2_TEMPLATE]
 	"game\server\server_episodic.vpc"		[$HL2_EPISODIC]
 	"game\server\server_vectronic.vpc"		[$VECTRONIC]
-	//"game\server\server_swarm.vpc"		[$SWARM]
+	"game\server\server_swarm.vpc"		[$SWARM]
 }
 
 

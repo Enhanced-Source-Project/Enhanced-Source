@@ -10,7 +10,7 @@
 #include "soundent.h"
 #include "grenade_ar2.h"
 #include "te_effect_dispatch.h"
-#include "hl2_player.h"
+//#include "hl2_player.h"
 #include "ndebugoverlay.h"
 #include "movevars_shared.h"
 #include "bone_setup.h"

@@ -13,7 +13,7 @@
 #include "in_buttons.h"
 #include "ai_memory.h"
 #include "soundent.h"
-#include "hl2_player.h"
+//#include "hl2_player.h"
 #include "EntityFlame.h"
 #include "weapon_flaregun.h"
 #include "te_effect_dispatch.h"
