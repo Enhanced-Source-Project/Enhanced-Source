@@ -40,7 +40,7 @@ bool CGameUiAvatarImage::SetAvatarSteamID( CSteamID steamIDUser )
 
 	if ( steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
 	{
-		int iAvatar = steamapicontext->SteamFriends()->GetFriendAvatar( steamIDUser, k_EAvatarSize64x64 );
+		int iAvatar = steamapicontext->SteamFriends()->GetMediumFriendAvatar( steamIDUser );
 
 		/*
 		// See if it's in our list already

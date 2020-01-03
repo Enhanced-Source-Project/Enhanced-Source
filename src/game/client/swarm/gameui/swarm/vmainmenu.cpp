@@ -1126,7 +1126,7 @@ void MainMenu::ApplySchemeSettings( IScheme *pScheme )
 			AssertMsg( false, "This branch run on a PC build without IS_WINDOWS_PC defined." );
 #endif
 
-			int32 availableBytes, totalBytes = 0;
+			uint64 availableBytes, totalBytes = 0;
 			if ( pRemoteStorage && pRemoteStorage->GetQuota( &totalBytes, &availableBytes ) )
 			{
 				if ( totalBytes > 0 )

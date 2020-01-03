@@ -94,7 +94,7 @@ public:
 
 	virtual		void		CAM_Think( void );
 	virtual		int			CAM_IsThirdPerson( int nSlot = -1 );
-//	virtual		void		CAM_GetCameraOffset( Vector& ofs );
+	virtual		void		CAM_GetCameraOffset( Vector& ofs );
 	virtual		void		CAM_ToThirdPerson(void);
 	virtual		void		CAM_ToFirstPerson(void);
 	virtual		void		CAM_ToThirdPersonShoulder(void);

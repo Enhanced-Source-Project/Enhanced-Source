@@ -879,6 +879,19 @@ int CInput::CAM_IsThirdPerson( int nSlot /*=-1*/ )
 
 /*
 ==============================
+CAM_GetCameraOffset
+
+==============================
+*/
+void CInput::CAM_GetCameraOffset( Vector& ofs )
+{
+	ASSERT_LOCAL_PLAYER_RESOLVABLE();
+	PerUserInput_t &user = GetPerUser();
+	VectorCopy( user.m_vecCameraOffset, ofs );
+}
+
+/*
+==============================
 CAM_InterceptingMouse
 
 ==============================
@@ -903,8 +916,8 @@ static ConCommand endcamin( "-camin", CAM_InUp );
 static ConCommand startcamout( "+camout", CAM_OutDown );
 static ConCommand camout( "-camout", CAM_OutUp );
 #ifdef INFESTED_DLL
-static ConCommand thirdperson( "thirdperson", Cmd_CAM_ToThirdPerson, "Switch to thirdperson camera." );
-static ConCommand firstperson( "firstperson", Cmd_CAM_ToFirstPerson, "Switch to firstperson camera.", FCVAR_CHEAT );
+static ConCommand thirdperson( "thirdperson", ::CAM_ToThirdPerson, "Switch to thirdperson camera." );
+static ConCommand firstperson( "firstperson", ::CAM_ToFirstPerson, "Switch to firstperson camera.", FCVAR_CHEAT );
 #else
 static ConCommand thirdperson("thirdperson", ::CAM_ToThirdPerson, "Switch to thirdperson camera.", FCVAR_CHEAT | FCVAR_SERVER_CAN_EXECUTE);
 static ConCommand firstperson("firstperson", ::CAM_ToFirstPerson, "Switch to firstperson camera.", FCVAR_SERVER_CAN_EXECUTE );

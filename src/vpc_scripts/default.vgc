@@ -8,6 +8,7 @@ $Games
 	"HL2_TEMPLATE"
 	"HL2_EPISODIC"
 	"VECTRONIC"
+	"SWARM"
 }
 
 $Conditional	"SOURCESDK" "1"

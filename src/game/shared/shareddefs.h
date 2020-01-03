@@ -921,6 +921,8 @@ enum Class_T
 #include "portal_shareddefs.h"
 #elif defined(HL2_DLL) || defined(HL2_CLIENT_DLL)
 #include "hl2_shareddefs.h"
+#elif defined(INFESTED_DLL)
+
 #else
 #include "my_shareddefs.h"
 #endif

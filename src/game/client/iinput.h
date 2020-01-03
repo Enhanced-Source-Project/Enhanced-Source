@@ -81,7 +81,7 @@ public:
 	// Third Person camera ( TODO/FIXME:  Move this to a separate interface? )
 	virtual void		CAM_Think( void ) = 0;
 	virtual int			CAM_IsThirdPerson( int nSlot = -1 ) = 0;
-//	virtual void		CAM_GetCameraOffset( Vector& ofs ) = 0;
+	virtual void		CAM_GetCameraOffset( Vector& ofs ) = 0;
 	virtual void		CAM_ToThirdPerson(void) = 0;
 	virtual void		CAM_ToFirstPerson(void) = 0;
 	virtual void		CAM_ToThirdPersonShoulder(void) = 0;
