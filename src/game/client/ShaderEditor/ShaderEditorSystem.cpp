@@ -9,8 +9,8 @@
 
 #include "cbase.h"
 #include "client_factorylist.h"
-#include "ShaderEditor/IVShaderEditor.h"
-#include "ShaderEditor/SEdit_ModelRender.h"
+#include "shadereditor/ivshadereditor.h"
+#include "shadereditor/sedit_modelrender.h"
 #include "ivrenderview.h"
 #include "iviewrender.h"
 #include "viewrender.h"
@@ -23,20 +23,20 @@
 #include "rendertexture.h"
 #include "c_rope.h"
 #include "model_types.h"
-
-
-#if SEDIT_USING_SWARM
+#include "filesystem.h"
+#ifdef SWARM_DLL
 #include "modelrendersystem.h"
 #endif
 
 
-#if SEDIT_USING_SWARM
+#if SWARM_DLL
 #define Editor_MainViewOrigin MainViewOrigin( 0 )
 #define Editor_MainViewForward MainViewForward( 0 )
 #else
 #define Editor_MainViewOrigin MainViewOrigin()
 #define Editor_MainViewForward MainViewForward()
 #endif
+
 
 ShaderEditorHandler __g_ShaderEditorSystem( "ShEditUpdate" );
 ShaderEditorHandler *g_ShaderEditorSystem = &__g_ShaderEditorSystem;
@@ -81,12 +81,14 @@ bool ShaderEditorHandler::Init()
 #endif
 
 	char modulePath[MAX_PATH*4];
-#ifdef SEDIT_USING_SWARM
-	Q_snprintf( modulePath, sizeof( modulePath ), "%s/bin/shadereditor_swarm.dll\0", engine->GetGameDirectory() );
+#ifdef SWARM_DLL
+	Q_snprintf( modulePath, sizeof( modulePath ), "%s/bin/shadereditor_swarm.dll", engine->GetGameDirectory() );
 #elif SOURCE_2006
-	Q_snprintf( modulePath, sizeof( modulePath ), "%s/bin/shadereditor_2006.dll\0", engine->GetGameDirectory() );
+	Q_snprintf( modulePath, sizeof( modulePath ), "%s/bin/shadereditor_2006.dll", engine->GetGameDirectory() );
+#elif SOURCE_2013
+	Q_snprintf( modulePath, sizeof( modulePath ), "%s/bin/shadereditor_2013.dll", engine->GetGameDirectory() );
 #else
-	Q_snprintf( modulePath, sizeof( modulePath ), "%s/bin/shadereditor_2007.dll\0", engine->GetGameDirectory() );
+	Q_snprintf( modulePath, sizeof( modulePath ), "%s/bin/shadereditor_2007.dll", engine->GetGameDirectory() );
 #endif
 	shaderEditorModule = Sys_LoadModule( modulePath );
 	if ( shaderEditorModule )
@@ -95,7 +97,9 @@ bool ShaderEditorHandler::Init()
 		shaderEdit = shaderEditorDLLFactory ? ((IVShaderEditor *) shaderEditorDLLFactory( SHADEREDIT_INTERFACE_VERSION, NULL )) : NULL;
 
 		if ( !shaderEdit )
+		{
 			Warning( "Unable to pull IVShaderEditor interface.\n" );
+		}
 		else if ( !shaderEdit->Init( factories.appSystemFactory, gpGlobals, sEditMRender,
 				bCreateEditor, bShowPrimDebug, iEnableSkymask ) )
 		{
@@ -104,15 +108,19 @@ bool ShaderEditorHandler::Init()
 		}
 	}
 	else
+	{
 		Warning( "Cannot load shadereditor.dll from %s!\n", modulePath );
+	}
 
-	m_bReady = !!shaderEdit;
+	m_bReady = shaderEdit != NULL;
 
 	RegisterCallbacks();
 	RegisterViewRenderCallbacks();
 
 	if ( IsReady() )
+	{
 		shaderEdit->PrecacheData();
+	}
 
 	return true;
 }
@@ -150,16 +158,17 @@ void ShaderEditorHandler::Update( float frametime )
 
 CThreadMutex m_Lock;
 
-void ShaderEditorHandler::PreRender()
+void ShaderEditorHandler::InitialPreRender()
 {
 	if ( IsReady() && view )
 	{
+		m_Lock.Lock();
+
 		// make sure the class matches
 		const CViewSetup *v = view->GetPlayerViewSetup();
 		CViewSetup_SEdit_Shared stableVSetup( *v );
 		shaderEdit->OnPreRender( &stableVSetup );
 
-		m_Lock.Lock();
 		PrepareCallbackData();
 		m_Lock.Unlock();
 	}
@@ -183,10 +192,10 @@ void ShaderEditorHandler::CustomViewRender( int *viewId, const VisibleFogVolumeI
 	if ( IsReady() )
 		shaderEdit->OnSceneRender();
 }
-void ShaderEditorHandler::UpdateSkymask( bool bCombineMode )
+void ShaderEditorHandler::UpdateSkymask( bool bCombineMode, int x, int y, int w, int h )
 {
 	if ( IsReady() )
-		shaderEdit->OnUpdateSkymask( bCombineMode );
+		shaderEdit->OnUpdateSkymask( bCombineMode, x, y, w, h );
 }
 void ShaderEditorHandler::CustomPostRender()
 {
@@ -194,57 +203,8 @@ void ShaderEditorHandler::CustomPostRender()
 		shaderEdit->OnPostRender( true );
 }
 
-CON_COMMAND( hlsl_calc_angles, "" )
-{
-	if ( args.ArgC() < 4 )
-	{
-		Msg( "args: numsteps stepsize startangle [increment] [increment delay]\n" );
-		return;
-	}
-
-	int steps = atoi( args[ 1 ] );
-	float degreePerStep = atof( args[ 2 ] );
-	float startAngle = atof( args[ 3 ] );
-
-	float increment = (args.ArgC() >= 5) ? atof( args[ 4 ] ) : 0.0f;
-	int incrementDelay = (args.ArgC() >= 6) ? atoi( args[ 5 ] ) : 0;
-
-	if ( degreePerStep < 0 )
-		degreePerStep = 360.0f / ( steps + 1 );
-
-	QAngle curAng( 0, startAngle, 0 );
-	Vector vec;
-
-	float flCurLength = 1.0f;
-	int iCurIncStep = incrementDelay;
-
-	Msg( "\nstatic const float2 directions[%i] =\n{\n", steps );
-	for ( int i = 0; i < steps; i++ )
-	{
-		AngleVectors( curAng, &vec );
-		vec *= flCurLength;
-
-		Msg( "\tfloat2( %f, %f ),\n", vec.x, vec.y );
-		curAng.y += degreePerStep;
-
-		iCurIncStep--;
-
-		if ( iCurIncStep < 0 )
-		{
-			iCurIncStep = incrementDelay;
-			flCurLength += increment;
-		}
-	}
-	Msg( "};\n\n" );
-}
-
 struct CallbackData_t
 {
-	CallbackData_t()
-	{
-		mat_View.Identity();
-	};
-
 	void Reset()
 	{
 		sun_data.Init();
@@ -258,16 +218,9 @@ struct CallbackData_t
 
 	Vector4D player_speed;
 	Vector player_pos;
-
-	VMatrix mat_View;
 };
 
 static CallbackData_t clCallback_data;
-
-void ShaderEditorHandler::SetMainViewMatrix( VMatrix view )
-{
-	clCallback_data.mat_View = view;
-}
 
 void ShaderEditorHandler::PrepareCallbackData()
 {
@@ -275,46 +228,38 @@ void ShaderEditorHandler::PrepareCallbackData()
 
 	float flSunAmt_Goal = 0;
 	static float s_flSunAmt_Last = 0;
-	static CHandle<C_Sun> handleSun;
 
-	static float flSearchTimer = 0.0f;
-	if ( abs( flSearchTimer - gpGlobals->curtime ) > 5.0f )
+	C_BaseEntity *pEnt = ClientEntityList().FirstBaseEntity();
+	while ( pEnt )
 	{
-		C_BaseEntity *pEnt = ClientEntityList().FirstBaseEntity();
-		while ( ( !handleSun.IsValid() || handleSun.Get() == NULL ) && pEnt )
+		if ( !Q_stricmp( pEnt->GetClassname(), "class C_Sun" ) )
 		{
-			if ( !Q_stricmp( pEnt->GetClassname(), "class C_Sun" ) )
-			{
-				handleSun.Set( assert_cast<C_Sun*>( pEnt ) );
+			C_Sun *pSun = ( C_Sun* )pEnt;
+			Vector dir = pSun->m_vDirection;
+			dir.NormalizeInPlace();
+
+			Vector screen;
+
+			if ( ScreenTransform( Editor_MainViewOrigin + dir * 512, screen ) )
+				ScreenTransform( (Editor_MainViewOrigin - dir * 512), screen );
+
+			screen = screen * Vector( 0.5f, -0.5f, 0 ) + Vector( 0.5f, 0.5f, 0 );
+
+			Q_memcpy( clCallback_data.sun_data.Base(), screen.Base(), sizeof(float) * 2 );
+			clCallback_data.sun_data[ 2 ] = DotProduct( dir, Editor_MainViewForward );
+			clCallback_data.sun_dir = dir;
+
+			trace_t tr;
+			UTIL_TraceLine( Editor_MainViewOrigin, Editor_MainViewOrigin + dir * MAX_TRACE_LENGTH, MASK_SOLID, NULL, COLLISION_GROUP_DEBRIS, &tr );
+			if ( !tr.DidHitWorld() )
 				break;
-			}
-			pEnt = ClientEntityList().NextBaseEntity( pEnt );
+
+			if ( tr.surface.flags & SURF_SKY )
+				flSunAmt_Goal = 1;
+
+			break;
 		}
-	}
-
-	if ( handleSun.IsValid() && handleSun.Get() != NULL )
-	{
-		C_Sun *pSun = handleSun.Get();
-		Vector dir = pSun->m_vDirection;
-		dir.NormalizeInPlace();
-
-		Vector screen;
-
-		if ( ScreenTransform( Editor_MainViewOrigin + dir * 512, screen ) )
-			ScreenTransform( (Editor_MainViewOrigin - dir * 512), screen );
-
-		screen = screen * Vector( 0.5f, -0.5f, 0 ) + Vector( 0.5f, 0.5f, 0 );
-
-		Q_memcpy( clCallback_data.sun_data.Base(), screen.Base(), sizeof(float) * 2 );
-		clCallback_data.sun_data[ 2 ] = DotProduct( dir, Editor_MainViewForward );
-		clCallback_data.sun_dir = dir;
-
-		trace_t tr;
-		UTIL_TraceLine( Editor_MainViewOrigin, Editor_MainViewOrigin + dir * MAX_TRACE_LENGTH, MASK_SOLID, NULL, COLLISION_GROUP_DEBRIS, &tr );
-
-		if ( tr.DidHitWorld() &&
-			tr.surface.flags & SURF_SKY )
-			flSunAmt_Goal = 1;
+		pEnt = ClientEntityList().NextBaseEntity( pEnt );
 	}
 
 	if ( s_flSunAmt_Last != flSunAmt_Goal )
@@ -361,27 +306,6 @@ pFnClCallback_Declare( ClCallback_PlayerPos )
 	m_Lock.Unlock();
 }
 
-pFnClCallback_Declare( ClCallback_MainView_Row0 )
-{
-	m_Lock.Lock();
-	Q_memcpy( pfl4, clCallback_data.mat_View.m[0], sizeof(float) * 3 );
-	m_Lock.Unlock();
-}
-
-pFnClCallback_Declare( ClCallback_MainView_Row1 )
-{
-	m_Lock.Lock();
-	Q_memcpy( pfl4, clCallback_data.mat_View.m[1], sizeof(float) * 3 );
-	m_Lock.Unlock();
-}
-
-pFnClCallback_Declare( ClCallback_MainView_Row2 )
-{
-	m_Lock.Lock();
-	Q_memcpy( pfl4, clCallback_data.mat_View.m[2], sizeof(float) * 3 );
-	m_Lock.Unlock();
-}
-
 void ShaderEditorHandler::RegisterCallbacks()
 {
 	if ( !IsReady() )
@@ -392,9 +316,6 @@ void ShaderEditorHandler::RegisterCallbacks()
 	shaderEdit->RegisterClientCallback( "sun dir", ClCallback_SunDirection, 3 );
 	shaderEdit->RegisterClientCallback( "local player velocity", ClCallback_PlayerVelocity, 4 );
 	shaderEdit->RegisterClientCallback( "local player position", ClCallback_PlayerPos, 3 );
-	shaderEdit->RegisterClientCallback( "main view row 0", ClCallback_MainView_Row0, 3 );
-	shaderEdit->RegisterClientCallback( "main view row 1", ClCallback_MainView_Row1, 3 );
-	shaderEdit->RegisterClientCallback( "main view row 2", ClCallback_MainView_Row2, 3 );
 
 	shaderEdit->LockClientCallbacks();
 }
@@ -608,7 +529,7 @@ protected:
 		if ( bParticles )
 			g_pParticleSystemMgr->ResetRenderCache();
 
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 
 		extern ConVar cl_modelfastpath;
 		extern ConVar r_drawothermodels;
@@ -831,7 +752,7 @@ protected:
 			g_pParticleSystemMgr->DrawRenderCache( bShadowDepth );
 	};
 
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 	void	DrawOpaqueRenderables_ModelRenderables( int nCount, ModelRenderSystemData_t* pModelRenderables, bool bShadowDepth )
 	{
 		g_pModelRenderSystem->DrawModels( pModelRenderables, nCount, bShadowDepth ? MODEL_RENDER_MODE_SHADOW_DEPTH : MODEL_RENDER_MODE_NORMAL );
@@ -954,7 +875,7 @@ protected:
 	};
 #endif
 
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 	void DrawOpaqueRenderables_DrawBrushModels( int nCount, CClientRenderablesList::CEntry **ppEntities, bool bShadowDepth )
 	{
 		for( int i = 0; i < nCount; ++i )
@@ -968,7 +889,7 @@ protected:
 	};
 #endif
 
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 	void DrawOpaqueRenderables_DrawStaticProps( int nCount, CClientRenderablesList::CEntry **ppEntities, bool bShadowDepth )
 	{
 		if ( nCount == 0 )
@@ -1041,7 +962,7 @@ protected:
 	};
 #endif
 
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 	void DrawOpaqueRenderables_Range( int nCount, CClientRenderablesList::CEntry **ppEntities, bool bShadowDepth )
 	{
 		for ( int i = 0; i < nCount; ++i )
@@ -1226,7 +1147,7 @@ public:
 
 		for ( int i = 0; i < RENDER_GROUP_COUNT; i++ )
 		{
-#ifndef SEDIT_USING_SWARM
+#ifndef SWARM_DLL
 			const bool bStaticProp = i == 0 || i == 2 || i == 4 || i == 6;
 #endif
 
@@ -1237,7 +1158,7 @@ public:
 				if ( !pEntry || !pEntry->m_pRenderable )
 					continue;
 
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 				const bool bStaticProp = pEntry->m_nModelType == RENDERABLE_MODEL_STATIC_PROP;
 #endif
 
@@ -1257,7 +1178,7 @@ public:
 						bRemove = !settings.bDrawPlayers;
 					else if ( dynamic_cast< CBaseCombatWeapon* >( pEntity ) != NULL )
 						bRemove = !settings.bDrawWeapons;
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 					else if ( pEntity->ComputeTranslucencyType() != RENDERABLE_IS_OPAQUE )
 #else
 					else if ( pEntry->m_pRenderable->IsTransparent() )
@@ -1270,7 +1191,7 @@ public:
 				if ( bRemove )
 				{
 					pEntry->m_pRenderable = NULL;
-#ifndef SEDIT_USING_SWARM
+#ifndef SWARM_DLL
 					pEntry->m_RenderHandle = NULL;
 #endif
 				}
@@ -1282,7 +1203,7 @@ public:
 				CClientRenderablesList::CEntry *pEntry = m_pRenderablesList->m_RenderGroups[i] + e;
 
 				if ( !pEntry || !pEntry->m_pRenderable
-#ifndef SEDIT_USING_SWARM
+#ifndef SWARM_DLL
 					|| !pEntry->m_RenderHandle
 #endif
 					)
@@ -1291,25 +1212,21 @@ public:
 					{
 						CClientRenderablesList::CEntry *pEntry2 = m_pRenderablesList->m_RenderGroups[i] + e2;
 						if ( pEntry2 && pEntry2->m_pRenderable
-#ifndef SEDIT_USING_SWARM
+#ifndef SWARM_DLL
 							&& pEntry2->m_RenderHandle
 #endif
 							)
 						{
-#ifdef SEDIT_USING_SWARM
 							CClientRenderablesList::CEntry tmp = *pEntry;
 							*pEntry = *pEntry2;
 							*pEntry2 = tmp;
-#else
-							swap( *pEntry, *pEntry2 );
-#endif
 							break;
 						}
 					}
 				}
 
 				if ( pEntry && pEntry->m_pRenderable
-#ifndef SEDIT_USING_SWARM
+#ifndef SWARM_DLL
 					&& pEntry->m_RenderHandle
 #endif
 					)
@@ -1350,7 +1267,7 @@ private:
 
 };
 
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 bool UpdateRefractIfNeededByList( CViewModelRenderablesList::RenderGroups_t &list )
 {
 	int nCount = list.Count();
@@ -1549,7 +1466,7 @@ pFnVrCallback_Declare( VrCallback_ViewModel )
 	viewModelSetup.zNear = view.zNearViewmodel;
 	viewModelSetup.zFar = view.zFarViewmodel;
 	viewModelSetup.fov = view.fovViewmodel;
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 	viewModelSetup.m_flAspectRatio = engine->GetScreenAspectRatio( view.width, view.height );
 #else
 	viewModelSetup.m_flAspectRatio = engine->GetScreenAspectRatio();
@@ -1576,7 +1493,7 @@ pFnVrCallback_Declare( VrCallback_ViewModel )
 	if( bUseDepthHack )
 		pRenderContext->DepthRange( 0.0f, 0.1f );
 	
-#ifdef SEDIT_USING_SWARM
+#ifdef SWARM_DLL
 	CViewModelRenderablesList list;
 	ClientLeafSystem()->CollateViewModelRenderables( &list );
 	CViewModelRenderablesList::RenderGroups_t &opaqueViewModelList = list.m_RenderGroups[ CViewModelRenderablesList::VM_GROUP_OPAQUE ];
@@ -1608,6 +1525,7 @@ pFnVrCallback_Declare( VrCallback_ViewModel )
 	if ( bFogOverride )
 		pCView->DisableFog();
 }
+
 
 void ShaderEditorHandler::RegisterViewRenderCallbacks()
 {

@@ -734,7 +734,7 @@ void CDeferredViewRender::ViewDrawSceneDeferred( const CViewSetup &view, int nCl
 #endif
 
 #ifdef SHADEREDITOR
-	g_ShaderEditorSystem->UpdateSkymask( bDrew3dSkybox );
+	g_ShaderEditorSystem->UpdateSkymask( bDrew3dSkybox, view.x, view.y, view.width, view.height );
 #endif
 
 	GetLightingManager()->RenderVolumetrics( view );
@@ -854,6 +854,14 @@ void CDeferredViewRender::ViewDrawComposite( const CViewSetup &view, bool &bDrew
 
 	DrawWorldComposite( view, nClearFlags, drawSkybox );
 
+#ifdef SHADEREDITOR
+	VisibleFogVolumeInfo_t fogVolumeInfo;
+	render->GetVisibleFogVolume( view.origin, &fogVolumeInfo );
+	WaterRenderInfo_t info;
+	DetermineWaterRenderInfo( fogVolumeInfo, info );
+	g_ShaderEditorSystem->CustomViewRender( &g_CurrentViewID, fogVolumeInfo, info );
+#endif
+
 	DrawViewModels( view, bDrawViewModel, false );
 }
 
@@ -909,7 +917,7 @@ void CDeferredViewRender::DrawSkyboxComposite( const CViewSetup &view, const boo
 	{
 		AddViewToScene( pSkyView );
 #ifdef SHADEREDITOR
-		g_ShaderEditorSystem->UpdateSkymask();
+		g_ShaderEditorSystem->UpdateSkymask( bDrew3dSkybox, view.x, view.y, view.width, view.height );
 #endif
 	}
 
@@ -1964,7 +1972,7 @@ void CDeferredViewRender::ProcessDeferredGlobals( const CViewSetup &view )
 
 	MatrixSourceToDeviceSpace( matView );
 #ifdef SHADEREDITOR
-	g_ShaderEditorSystem->SetMainViewMatrix( matView );
+	//g_ShaderEditorSystem->SetMainViewMatrix( matView );
 #endif
 
 	matView = matView.Transpose3x3();

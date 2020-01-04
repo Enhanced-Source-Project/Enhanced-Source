@@ -13,6 +13,11 @@
 #define pFnVrCallback_Declare( x ) void x( bool * const pbOptions, int * const piOptions,\
 										float * const pflOptions, char ** const pszOptions )
 
+#define DEFINE_SHADEREDITOR_MATERIALVAR( effectName, nodeName, materialVarName, localVarName ) \
+	static ShaderEditVarToken token_ ## localVarName = SHADEREDIT_MVAR_TOKEN_INVALID; \
+	IMaterialVar *localVarName = shaderEdit->GetPPEMaterialVarFast( \
+		token_ ## localVarName, effectName, nodeName, materialVarName )
+
 #ifndef PROCSHADER_DLL
 
 #ifdef SHADER_EDITOR_DLL
@@ -20,8 +25,13 @@
 #include "view_shared.h"
 #else
 #include "interface.h"
-#include "ShaderEditor/ShaderEditorSystem.h"
+#include "shadereditor/shadereditorsystem.h"
 #endif // NOT SHADER_EDITOR_DLL
+
+class IMaterial;
+class IMaterialVar;
+
+typedef unsigned int ShaderEditVarToken;
 
 enum SEDIT_SKYMASK_MODE
 {
@@ -71,11 +81,22 @@ public:
 	virtual void Shutdown() = 0;
 	virtual void PrecacheData() = 0;
 
+	// call before Init() to overwrite any paths, pass in NULL for the ones that shouldn't be overwritten
+	virtual void OverridePaths( const char *pszWorkingDirectory,
+		const char *pszCompilePath = NULL,		// abs path to compiler binaries
+		const char *pszLocalCompilePath = NULL,	// local path to compiler binaries, relative to shader source directory
+		const char *pszGamePath = NULL,
+		const char *pszCanvas = NULL,			// path to canvas files
+		const char *pszShaderSource = NULL,		// path to shader source files
+		const char *pszDumps = NULL,			// path to shader configuration files
+		const char *pszUserFunctions = NULL,	// path to custom function bodies
+		const char *pszEditorRoot = NULL ) = 0;	// path to 'shadereditorui' home directory
+
 	// update the lib
 	virtual void OnFrame( float frametime ) = 0;
 	virtual void OnPreRender( void *viewsetup ) = 0;
 	virtual void OnSceneRender() = 0;
-	virtual void OnUpdateSkymask( bool bCombineMode ) = 0;
+	virtual void OnUpdateSkymask( bool bCombineMode, int x, int y, int w, int h ) = 0;
 	virtual void OnPostRender( bool bUpdateFB ) = 0;
 
 	// data callbacks for hlsl constants
@@ -101,9 +122,19 @@ public:
 	// Does not push a new RT but uses the current one
 	// If you have 'during scene' nodes, make sure to call it twice in the appropriate places
 	virtual void		DrawPPEOnDemand( const int &index, const bool bInScene = false ) = 0;
+	virtual void		DrawPPEOnDemand( const int &index, int x, int y, int w, int h, const bool bInScene = false ) = 0;
+
+	// access a materialvar based on an incrementing token
+	// you don't need to cache the returned value, it's okay to call this each frame
+	// initialize the token with SHADEREDIT_MVAR_TOKEN_INVALID
+	virtual IMaterialVar	*GetPPEMaterialVarFast( ShaderEditVarToken &token,
+		const char *pszPPEName, const char *pszNodeName, const char *pszVarName ) = 0;
 };
 
-#define SHADEREDIT_INTERFACE_VERSION "ShaderEditor004"
+#define SHADEREDIT_MVAR_TOKEN_INVALID 0
+#define SHADEREDIT_MVAR_TOKEN_FAILED 0xFFFFFFFF
+
+#define SHADEREDIT_INTERFACE_VERSION "ShaderEditor005"
 
 #ifdef SHADER_EDITOR_DLL
 class ShaderEditorInterface;

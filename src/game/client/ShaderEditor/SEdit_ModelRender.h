@@ -2,9 +2,7 @@
 #define SHEDITMRENDER_H
 
 #include "cbase.h"
-#include "ShaderEditor/ISEdit_ModelRender.h"
-
-#define SEDIT_USING_SWARM 1
+#include "shadereditor/isedit_modelrender.h"
 
 class C_BaseFlex_OverrideLod;
 

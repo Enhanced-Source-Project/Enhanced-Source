@@ -8,10 +8,10 @@
 
 #include "cbase.h"
 
-#include "vgui/iinput.h"
-#include "vgui_controls/controls.h"
+#include "vgui/IInput.h"
+#include "vgui_controls/Controls.h"
 
-#include "ShaderEditor/SEdit_ModelRender.h"
+#include "shadereditor/sedit_modelrender.h"
 #include "model_types.h"
 
 #ifndef SOURCE_2006
@@ -132,7 +132,7 @@ bool SEditModelRender::LoadModel( const char *localPath )
 
 	C_BaseFlex *pEnt = new C_BaseFlex();
 	pEnt->InitializeAsClientEntity( NULL,
-#if SEDIT_USING_SWARM
+#if SWARM_DLL
 		false
 #else
 		RENDER_GROUP_OPAQUE_ENTITY
@@ -272,12 +272,12 @@ void SEditModelRender::ExecRender()
 	for ( int i = 0; i < m_iNumPoseParams; i++ )
 		pModelInstance->SetPoseParameter( i, 0 );
 
-#if SEDIT_USING_SWARM
+#if SWARM_DLL
 	RenderableInstance_t instance;
 	instance.m_nAlpha = 255;
 #endif
 	pModelInstance->DrawModel( STUDIO_RENDER
-#if SEDIT_USING_SWARM
+#if SWARM_DLL
 		, instance
 #endif
 		);
@@ -301,7 +301,7 @@ int SEditModelRender::MaterialPicker( char ***szMat )
 	Vector ray;
 	const CViewSetup *pViewSetup = view->GetPlayerViewSetup();
 	float ratio =engine->GetScreenAspectRatio(
-#if SEDIT_USING_SWARM
+#if SWARM_DLL
 		pViewSetup->width, pViewSetup->height
 #endif
 		);
