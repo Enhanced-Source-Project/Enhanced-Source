@@ -126,7 +126,7 @@ if exist inclist.txt del /f /q inclist.txt
 if exist vcslist.txt del /f /q vcslist.txt
 
 REM ****************
-REM Generate a makefile for the shader project
+echo Generating a makefile for the shader project...
 REM ****************
 perl "%SrcDirBase%\devtools\bin\updateshaders.pl" -source "%SrcDirBase%" %inputbase%
 
@@ -139,7 +139,7 @@ echo Building inc files, asm vcs files, and VMPI worklist for %inputbase%...
 nmake /S /C -f makefile.%inputbase%
 
 REM ****************
-REM Copy the inc files to their target
+echo Copying the inc files to their target...
 REM ****************
 if exist "inclist.txt" (
 	echo Publishing shader inc files to target...

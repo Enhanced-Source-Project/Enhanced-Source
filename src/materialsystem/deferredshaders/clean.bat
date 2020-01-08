@@ -4,7 +4,7 @@ setlocal
 if /i "%1" == "-game" goto CleanGameDir
 
 rem Clean out platform
-if exist ..\..\..\game\platform\shaders rd /s /q ..\..\..\game\platform\shaders
+:: if exist ..\..\..\game\platform\shaders rd /s /q ..\..\..\game\platform\shaders
 goto CleanOtherStuff
 
 :CleanGameDir
@@ -14,6 +14,9 @@ if exist "%__GameDir%\shaders" rd /s /q "%2\shaders"
 goto CleanOtherStuff
 
 :CleanOtherStuff
+:: kill all shadercompile.exe processes
+taskkill /f /im shadercompile.exe
+
 if exist debug_dx9 rd /s /q debug_dx9
 
 if exist fxctmp9 rd /s /q fxctmp9
@@ -33,6 +36,15 @@ if exist vshtmp9_360_tmp rd /s /q vshtmp9_360_tmp
 if exist pshtmp9_360_tmp rd /s /q pshtmp9_360_tmp
 
 if exist shaders rd /s /q shaders
+
+if exist filelist.txt del /f /q filelist.txt
+if exist filestocopy.txt del /f /q filestocopy.txt
+if exist filelistgen.txt del /f /q filelistgen.txt
+if exist inclist.txt del /f /q inclist.txt
+if exist vcslist.txt del /f /q vcslist.txt
+
+if exist makefile.* del makefile.*
+
 goto end
 
 :MissingGameInfo

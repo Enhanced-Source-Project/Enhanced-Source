@@ -50,15 +50,16 @@ set tt_all_chkpt=%tt_start%
 set BUILD_SHADER=call buildshaders.bat
 set ARG_EXTRA=
 
-%BUILD_SHADER% deferred_shaders -game %GAMEDIR% -source %SOURCEDIR% -dx9_30 -force30
+%BUILD_SHADER% deferred_shaders_short -game %GAMEDIR% -source %SOURCEDIR% -dx9_30 -force30
+:: -force30
 
 
-rem echo.
+echo.
 if not "%dynamic_shaders%" == "1" (
-  rem echo Finished full buildallshaders %*
+  echo Finished full buildallshaders %*
 ) else (
-  rem echo Finished dynamic buildallshaders %*
+  echo Finished dynamic buildallshaders %*
 )
 
-rem %TTEXE% -diff %tt_all_start% -cur
-rem echo.
+%TTEXE% -diff %tt_all_start% -cur
+echo.
