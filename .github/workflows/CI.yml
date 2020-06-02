@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - .github/workflows/CI.yml
+      - src/**
+  pull_request:
+    paths:
+      - .github/workflows/CI.yml
+      - src/**
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    env:
+      POWERSHELL_TELEMETRY_OPTOUT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [ Release, Debug ]
+        project: [ deferred, template, portal_template, hl2_template, vectronic ]
+    steps:
+    - uses: actions/checkout@v2
+    - name: vpc mksln
+      working-directory: src
+      shell: cmd
+      run: |
+        reg import vpc_projecttype_regkey_fix.reg
+        reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\10.0\Projects\{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}" /v DefaultProjectExtension /t REG_SZ /d vcproj /f
+        devtools\bin\vpc.exe /${{ matrix.project }} +game /mksln ${{ matrix.project }}.sln /define:VS2019
+        "%PROGRAMFILES(X86)%\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\devenv.com" ${{ matrix.project }}.sln /upgrade
+    - uses: microsoft/setup-msbuild@v1
+    - name: Build
+      run: msbuild src\${{ matrix.project }}.sln /m /nologo /p:Configuration=${{ matrix.configuration }} /v:m
+    - name: Prepare artifacts
+      run: |
+        mkdir -vb artifacts
+        mv -vb src\game\client\${{ matrix.configuration }}_${{ matrix.project }}\*.dll, src\game\server\${{ matrix.configuration }}_${{ matrix.project }}\*.dll artifacts
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.configuration }}_${{ matrix.project }}
+        path: artifacts
