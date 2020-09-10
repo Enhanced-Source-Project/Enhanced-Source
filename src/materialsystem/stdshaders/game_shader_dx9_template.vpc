@@ -1,31 +1,27 @@
 //-----------------------------------------------------------------------------
-//	game_shader_dx9.vpc
+//	game_shader_dx9_template.vpc
 //
 //	Project Script for mods to use an an example of how to override shaders
 //-----------------------------------------------------------------------------
 
 $Macro OUTBINNAME	"game_shader_dx9"
 $Macro SRCDIR		"..\.."
-$Macro GAMENAME "portal"
+$Macro GAMENAME "template"
 $Include "$SRCDIR\materialsystem\stdshaders\game_shader_dx9_base.vpc"
 
 $Configuration
 {
 	$Compiler
 	{
-		$PreprocessorDefinitions		"$BASE;PORTAL_ONLY"
+		$PreprocessorDefinitions		"$BASE;TEMPLATE_DLL"
 	}
 }
 
-$Project "Shaders (Portal)"
+$Project "Shaders (Template)"
 {
-	$File "portal.cpp"
-	$File "portal_refract.cpp"
-	$File "portal_refract_helper.cpp"
-	$File "portalstaticoverlay.cpp"
-	
-	$File	"shadow.cpp"
-	$File	"shadowbuild_dx9.cpp"
-	
-	$File	"buildportalshaders.bat"
+	$Folder	"Source Files"
+	{
+		$File	"shadow.cpp"
+		$File	"shadowbuild_dx9.cpp"
+	}
 }

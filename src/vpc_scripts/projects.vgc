@@ -37,6 +37,14 @@ $Project "shaderlib"
 
 $Project "game_shader"
 {
+	"materialsystem\stdshaders\game_shader_dx9_template.vpc"	[$TEMPLATE]
+	"materialsystem\stdshaders\game_shader_dx9_template.vpc"	[$HL2]
+	"materialsystem\stdshaders\game_shader_dx9_template.vpc"	[$HL2_TEMPLATE]
+	"materialsystem\stdshaders\game_shader_dx9_template.vpc"	[$HL2_EPISODIC]
+	"materialsystem\stdshaders\game_shader_dx9_template.vpc"	[$VECTRONIC]
+	"materialsystem\stdshaders\game_shader_dx9_template.vpc"	[$SWARM]
+	
+	"materialsystem\stdshaders\game_shader_dx9_portal.vpc"	[$PORTAL_TEMPLATE]
 	"materialsystem\stdshaders\game_shader_dx9_portal.vpc"	[$PORTAL]
 	"materialsystem\deferredshaders\game_shader_generic_deferred.vpc"	[$DEFERRED]
 }
