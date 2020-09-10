@@ -15,8 +15,9 @@
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
+static ConVar r_shadow_rtt_debug( "r_shadow_rtt_debug", "0", FCVAR_CHEAT, "Turn on RTT shadow debug (restart map)" );
 
-BEGIN_VS_SHADER_FLAGS( Shadow, "Help for Shadow", SHADER_NOT_EDITABLE )
+BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 
 	BEGIN_SHADER_PARAMS
 		SHADER_PARAM( MAXFALLOFFAMOUNT, SHADER_PARAM_TYPE_FLOAT, "240", "" )
@@ -88,7 +89,10 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Help for Shadow", SHADER_NOT_EDITABLE )
 				//       since these two permutations produce *different* values on 360!!
 				//       This was causing undue darkening of the framebuffer by these
 				//       shadows, which was highly noticeable in very dark areas:
-				EnableAlphaBlending( SHADER_BLEND_ZERO, SHADER_BLEND_SRC_COLOR );
+				if ( r_shadow_rtt_debug.GetBool() )
+					DisableAlphaBlending();
+				else
+					EnableAlphaBlending( SHADER_BLEND_ZERO, SHADER_BLEND_SRC_COLOR );
 
 				unsigned int flags = VERTEX_POSITION | VERTEX_COLOR;
 				int numTexCoords = 2;
@@ -97,7 +101,10 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Help for Shadow", SHADER_NOT_EDITABLE )
 			}
 			else
 			{
-				EnableAlphaBlending( SHADER_BLEND_ZERO, SHADER_BLEND_SRC_COLOR );
+				if ( r_shadow_rtt_debug.GetBool() )
+					DisableAlphaBlending();
+				else
+					EnableAlphaBlending( SHADER_BLEND_ZERO, SHADER_BLEND_SRC_COLOR );
 
 				/*
 				EnableAlphaBlending( SHADER_BLEND_SRC_ALPHA, SHADER_BLEND_ONE_MINUS_SRC_ALPHA );
@@ -123,6 +130,7 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Help for Shadow", SHADER_NOT_EDITABLE )
 				DECLARE_STATIC_PIXEL_SHADER( shadow_ps20b );
 				SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
 				SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
+				SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
 				SET_STATIC_PIXEL_SHADER( shadow_ps20b );
 			}
 			else
@@ -130,6 +138,7 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Help for Shadow", SHADER_NOT_EDITABLE )
 				DECLARE_STATIC_PIXEL_SHADER( shadow_ps20 );
 				SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
 				SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
+				SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
 				SET_STATIC_PIXEL_SHADER( shadow_ps20 );
 			}
 

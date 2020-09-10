@@ -3,6 +3,7 @@
 // STATIC: "DEFERRED_SHADOWS"	"0..1"	[XBOX]
 // STATIC: "DEFERRED_SHADOWS"	"0..0"	[PC]
 // STATIC: "BLOBBY_SHADOWS"		"0..1"
+// STATIC: "DEBUG_SHADOWS"		"0..1"
 #include "common_fog_ps_fxc.h"
 
 #define HDRTYPE HDR_TYPE_NONE
@@ -47,6 +48,12 @@ struct PS_INPUT
 
 float4 main( PS_INPUT i ) : COLOR
 {
+#if DEBUG_SHADOWS == 1
+	float singleSample = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).a;
+	return FinalOutput( float4( singleSample, singleSample, singleSample, 1.0f ), 0.0f, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+#endif
+	
+
 	HALF shadowCoverage;
 	
 	#if BLOBBY_SHADOWS == 1
