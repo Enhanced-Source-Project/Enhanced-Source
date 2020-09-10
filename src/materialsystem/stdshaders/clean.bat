@@ -4,7 +4,7 @@ setlocal
 if /i "%1" == "-game" goto CleanGameDir
 
 rem Clean out platform
-if exist ..\..\..\game\platform\shaders rd /s /q ..\..\..\game\platform\shaders
+:: if exist ..\..\..\game\platform\shaders rd /s /q ..\..\..\game\platform\shaders
 goto CleanOtherStuff
 
 :CleanGameDir
