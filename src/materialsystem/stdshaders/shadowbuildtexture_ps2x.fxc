@@ -1,6 +1,8 @@
 //========== Copyright (c) Valve Corporation, All rights reserved. ==========//
 //paired with "unlitgeneric_vs20"
 
+// STATIC: "WRITE_DEPTH"	"0..1"
+
 #include "common_ps_fxc.h"
 
 sampler BaseTextureSampler	: register( s0 );
@@ -14,14 +16,21 @@ struct PS_INPUT
 	float2 vTexCoord1	: TEXCOORD1;
 	float2 vTexCoord2	: TEXCOORD2;
 	float2 vTexCoord3	: TEXCOORD3;
-	float4 worldPos_projPosZ		: TEXCOORD7;		// Necessary for pixel fog
 #endif
+	float4 worldPos_projPosZ		: TEXCOORD7;		// Necessary for pixel fog
 };
 
 HALF4 main( PS_INPUT i ) : COLOR
 {
+#if WRITE_DEPTH == 1
+	float returnDepth = i.worldPos_projPosZ.w;
+	
+	return FinalOutput( float4( returnDepth, 1.0f, 1.0f, 1.0f ), 0, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+
+#else
 	//relevant data is in the alpha channel, modulate vertex alpha by texture alpha
 	float returnAlpha = tex2D( BaseTextureSampler, i.vTexCoord0 ).a * i.vColor.a;
 	
 	return FinalOutput( float4( returnAlpha, 1.0f, 1.0f, returnAlpha ), 0, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+#endif
 }

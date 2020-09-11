@@ -15,7 +15,9 @@
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
-static ConVar r_shadow_rtt_debug( "r_shadow_rtt_debug", "0", FCVAR_CHEAT, "Turn on RTT shadow debug (restart map)" );
+static ConVar r_shadow_rtt_debug( "r_shadow_rtt_debug", "0", FCVAR_CHEAT | FCVAR_RELOAD_MATERIALS, "Turn on RTT shadow debug (restart map)" );
+
+ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "0", FCVAR_RELOAD_MATERIALS );
 
 BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 

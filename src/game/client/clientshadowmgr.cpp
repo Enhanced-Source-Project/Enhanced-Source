@@ -1,4 +1,4 @@
-//===== Copyright © 1996-2005, Valve Corporation, All rights reserved. ======//
+//===== Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ======//
 //
 // Purpose: 
 //
@@ -129,6 +129,7 @@ static ConVar r_shadow_deferred_simd( "r_shadow_deferred_simd", "0" );
 
 static ConVar r_shadow_debug_spew( "r_shadow_debug_spew", "0", FCVAR_CHEAT );
 
+static ConVar r_shadow_rtt_farz( "r_shadow_rtt_farz", "100" );
 
 ConVar r_flashlightdepthtexture( "r_flashlightdepthtexture", "1" );
 
@@ -298,8 +299,16 @@ void CTextureAllocator::Init()
 void CTextureAllocator::InitRenderTargets( void )
 {
 #if !defined( _X360 )
-	// don't need depth buffer for shadows
-	m_TexturePage.InitRenderTarget( TEXTURE_PAGE_SIZE, TEXTURE_PAGE_SIZE, RT_SIZE_NO_CHANGE, IMAGE_FORMAT_R32F, MATERIAL_RT_DEPTH_NONE, false, "_rt_Shadows" );
+	// need depth buffer for shadows
+	m_TexturePage.InitRenderTarget( 
+		TEXTURE_PAGE_SIZE,
+		TEXTURE_PAGE_SIZE,
+		RT_SIZE_NO_CHANGE,
+		IMAGE_FORMAT_R32F,
+		MATERIAL_RT_DEPTH_SEPARATE,
+		false,
+		"_rt_Shadows"
+	);
 #else
 	// unfortunate explicit management required for this render target
 	// 32bpp edram is only largest shadow fragment, but resolved to actual shadow atlas
@@ -5288,8 +5297,8 @@ bool CClientShadowMgr::DrawRenderToTextureShadow( int nSlot, unsigned short clie
 		m_ShadowAllocator.GetTextureRect( shadow.m_ShadowTexture, x, y, w, h );
 		pRenderContext->Viewport( IsX360() ? 0 : x, IsX360() ? 0 : y, w, h ); 
 
-		// Clear the selected viewport only (don't need to clear depth)
-		pRenderContext->ClearBuffers( true, false );
+		// Clear the selected viewport only (ES: also need to clear depth)
+		pRenderContext->ClearBuffers( true, true );
 
 		pRenderContext->MatrixMode( MATERIAL_VIEW );
 		pRenderContext->LoadMatrix( shadow.m_WorldToTexture );
@@ -5760,8 +5769,13 @@ void CClientShadowMgr::ComputeShadowTextures( const CViewSetup &view, int leafCo
 	pRenderContext->MatrixMode( MATERIAL_PROJECTION );
 	pRenderContext->PushMatrix();
 	pRenderContext->LoadIdentity();
+
+	// This gives us a depth buffer with inverted values,
+	// so we pass negative farZ as nearZ.
+	// The vertex shader (shadowbuildtexture_vs20.fxc) will
+	// un-invert the depth.
 	pRenderContext->Scale( 1, -1, 1 );
-	pRenderContext->Ortho( 0, 0, 1, 1, -9999, 0 );
+	pRenderContext->Ortho( 0, 0, 1, 1, -(r_shadow_rtt_farz.GetFloat()), 0 );
 
 	pRenderContext->MatrixMode( MATERIAL_VIEW );
 	pRenderContext->PushMatrix();
@@ -5770,8 +5784,8 @@ void CClientShadowMgr::ComputeShadowTextures( const CViewSetup &view, int leafCo
 
 	if ( !IsX360() && m_bRenderTargetNeedsClear )
 	{
-		// don't need to clear absent depth buffer
-		pRenderContext->ClearBuffers( true, false );
+		// ES: need to clear the depth buffer too
+		pRenderContext->ClearBuffers( true, true );
 		m_bRenderTargetNeedsClear = false;
 	}
 

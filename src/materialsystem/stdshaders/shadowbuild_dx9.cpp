@@ -1,4 +1,4 @@
-//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: A shader that builds the shadow using render-to-texture
 //
@@ -10,19 +10,21 @@
 #include "convar.h"
 #include "mathlib/VMatrix.h"
 
-#include "unlitgeneric_vs20.inc"
+#include "shadowbuildtexture_vs20.inc"
 #include "shadowbuildtexture_ps20.inc"
 #include "shadowbuildtexture_ps20b.inc"
 
 #if !defined( _X360 )
 	#include "shadowbuildtexture_ps30.inc"
-	#include "unlitgeneric_vs30.inc"
+	#include "shadowbuildtexture_vs30.inc"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 static ConVar mat_displacementmap( "mat_displacementmap", "1", FCVAR_CHEAT );
+
+extern ConVar r_shadow_rtt_mode; // from shadow.cpp
 
 DEFINE_FALLBACK_SHADER( ShadowBuild, ShadowBuild_DX9 )
 
@@ -53,10 +55,14 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 
 	SHADER_DRAW
 	{
+		bool bWriteDepth = r_shadow_rtt_mode.GetInt() != 0;
 		SHADOW_STATE
 		{
-			// Add the alphas into the frame buffer
-			EnableAlphaBlending( SHADER_BLEND_ONE, SHADER_BLEND_ONE );
+			// Legacy shadows: Add the alphas into the frame buffer
+			if ( !bWriteDepth )
+				EnableAlphaBlending( SHADER_BLEND_ONE, SHADER_BLEND_ONE );
+			else
+				DisableAlphaBlending();
 
 			// base texture.  We use the R channel.
 			pShaderShadow->EnableTexture( SHADER_SAMPLER0, true );
@@ -66,8 +72,22 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 
 			pShaderShadow->EnableColorWrites( true );
 			pShaderShadow->EnableAlphaWrites( false );
-			pShaderShadow->EnableDepthWrites( false );
-			pShaderShadow->DepthFunc( SHADER_DEPTHFUNC_ALWAYS );
+
+			if ( bWriteDepth )
+			{
+				// ES: We want to write and test depth.
+				pShaderShadow->EnableDepthWrites( true );
+				pShaderShadow->EnableDepthTest( true );
+				pShaderShadow->DepthFunc( SHADER_DEPTHFUNC_NEAREROREQUAL );
+			}
+			else
+			{
+				// Legacy shadows: don't care about depth
+				pShaderShadow->EnableDepthWrites( false );
+				pShaderShadow->EnableDepthTest( false );
+				pShaderShadow->DepthFunc( SHADER_DEPTHFUNC_ALWAYS );
+
+			}
 
 			// Specify vertex format (note that this shader supports compression)
 			unsigned int flags = VERTEX_POSITION | VERTEX_FORMAT_COMPRESSED;
@@ -79,18 +99,20 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 			if ( !g_pHardwareConfig->HasFastVertexTextures() )
 #endif
 			{
-				DECLARE_STATIC_VERTEX_SHADER( unlitgeneric_vs20 );
+				DECLARE_STATIC_VERTEX_SHADER( shadowbuildtexture_vs20 );
 				SET_STATIC_VERTEX_SHADER_COMBO( VERTEXCOLOR, 0  );
-				SET_STATIC_VERTEX_SHADER( unlitgeneric_vs20 );
+				SET_STATIC_VERTEX_SHADER( shadowbuildtexture_vs20 );
 
 				if( g_pHardwareConfig->SupportsPixelShaders_2_b() )
 				{
 					DECLARE_STATIC_PIXEL_SHADER( shadowbuildtexture_ps20b );
+					SET_STATIC_PIXEL_SHADER_COMBO( WRITE_DEPTH, bWriteDepth );
 					SET_STATIC_PIXEL_SHADER( shadowbuildtexture_ps20b );
 				}
 				else
 				{
 					DECLARE_STATIC_PIXEL_SHADER( shadowbuildtexture_ps20 );
+					SET_STATIC_PIXEL_SHADER_COMBO( WRITE_DEPTH, bWriteDepth );
 					SET_STATIC_PIXEL_SHADER( shadowbuildtexture_ps20 );
 				}
 			}
@@ -100,11 +122,12 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 				SET_FLAGS2( MATERIAL_VAR2_USES_VERTEXID );
 				SET_FLAGS2( MATERIAL_VAR2_SUPPORTS_TESSELLATION );
 
-				DECLARE_STATIC_VERTEX_SHADER( unlitgeneric_vs30 );
+				DECLARE_STATIC_VERTEX_SHADER( shadowbuildtexture_vs30 );
 				SET_STATIC_VERTEX_SHADER_COMBO( VERTEXCOLOR, 0  );
-				SET_STATIC_VERTEX_SHADER( unlitgeneric_vs30 );
+				SET_STATIC_VERTEX_SHADER( shadowbuildtexture_vs30 );
 
 				DECLARE_STATIC_PIXEL_SHADER( shadowbuildtexture_ps30 );
+				SET_STATIC_PIXEL_SHADER_COMBO( WRITE_DEPTH, bWriteDepth );
 				SET_STATIC_PIXEL_SHADER( shadowbuildtexture_ps30 );
 			}
 #endif
@@ -153,11 +176,11 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 #endif
 			{
 				// Compute the vertex shader index.
-				DECLARE_DYNAMIC_VERTEX_SHADER( unlitgeneric_vs20 );
+				DECLARE_DYNAMIC_VERTEX_SHADER( shadowbuildtexture_vs30 );
 				SET_DYNAMIC_VERTEX_SHADER_COMBO( SKINNING, pShaderAPI->GetCurrentNumBones() > 0 );
 				SET_DYNAMIC_VERTEX_SHADER_COMBO( COMPRESSED_VERTS, (int)vertexCompression );
 				SET_DYNAMIC_VERTEX_SHADER_COMBO( TESSELLATION, 0 );
-				SET_DYNAMIC_VERTEX_SHADER( unlitgeneric_vs20 );
+				SET_DYNAMIC_VERTEX_SHADER( shadowbuildtexture_vs30 );
 
 				if( g_pHardwareConfig->SupportsPixelShaders_2_b() )
 				{
@@ -195,11 +218,11 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 				}
 
 				// Compute the vertex shader index.
-				DECLARE_DYNAMIC_VERTEX_SHADER( unlitgeneric_vs30 );
+				DECLARE_DYNAMIC_VERTEX_SHADER( shadowbuildtexture_vs30 );
 				SET_DYNAMIC_VERTEX_SHADER_COMBO( SKINNING, pShaderAPI->GetCurrentNumBones() > 0 );
 				SET_DYNAMIC_VERTEX_SHADER_COMBO( COMPRESSED_VERTS, (int)vertexCompression );
 				SET_DYNAMIC_VERTEX_SHADER_COMBO( TESSELLATION, nTessellationMode );
-				SET_DYNAMIC_VERTEX_SHADER( unlitgeneric_vs30 );
+				SET_DYNAMIC_VERTEX_SHADER( shadowbuildtexture_vs30 );
 
 				DECLARE_DYNAMIC_PIXEL_SHADER( shadowbuildtexture_ps30 );
 				SET_DYNAMIC_PIXEL_SHADER( shadowbuildtexture_ps30 );
