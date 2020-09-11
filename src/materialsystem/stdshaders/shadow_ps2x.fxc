@@ -49,7 +49,7 @@ struct PS_INPUT
 float4 main( PS_INPUT i ) : COLOR
 {
 #if DEBUG_SHADOWS == 1
-	float singleSample = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).a;
+	float singleSample = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
 	return FinalOutput( float4( singleSample, singleSample, singleSample, 1.0f ), 0.0f, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
 #endif
 	
@@ -58,24 +58,24 @@ float4 main( PS_INPUT i ) : COLOR
 	
 	#if BLOBBY_SHADOWS == 1
 	{
-		shadowCoverage = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).a;
+		shadowCoverage = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
 	}
 	#elif !defined( _X360 )
 	{
 		HALF samples0;
 		HALF4  samples1_4;
-		samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).a;
-		samples1_4.x = tex2D( ShadowSampler, i.texCoord1_2.xy ).a;
-		samples1_4.y = tex2D( ShadowSampler, i.texCoord1_2.wz ).a;
-		samples1_4.z = tex2D( ShadowSampler, i.texCoord3_4.xy ).a;
-		samples1_4.w = tex2D( ShadowSampler, i.texCoord3_4.wz ).a;
+		samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
+		samples1_4.x = tex2D( ShadowSampler, i.texCoord1_2.xy ).r;
+		samples1_4.y = tex2D( ShadowSampler, i.texCoord1_2.wz ).r;
+		samples1_4.z = tex2D( ShadowSampler, i.texCoord3_4.xy ).r;
+		samples1_4.w = tex2D( ShadowSampler, i.texCoord3_4.wz ).r;
 
 		// Interpolate between a bunch of jittered shadow samples.
 		shadowCoverage = samples0 * 0.2 + dot( samples1_4, HALF4( 0.2, 0.2, 0.2, 0.2 ) );
 	}
 	#else
 	{
-		float samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).a;
+		float samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
 		float2 texCoord = i.texCoord0_shadowAlpha.xy;
 		float4 samples1_4;
 		asm {

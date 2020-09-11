@@ -299,7 +299,7 @@ void CTextureAllocator::InitRenderTargets( void )
 {
 #if !defined( _X360 )
 	// don't need depth buffer for shadows
-	m_TexturePage.InitRenderTarget( TEXTURE_PAGE_SIZE, TEXTURE_PAGE_SIZE, RT_SIZE_NO_CHANGE, IMAGE_FORMAT_ARGB8888, MATERIAL_RT_DEPTH_NONE, false, "_rt_Shadows" );
+	m_TexturePage.InitRenderTarget( TEXTURE_PAGE_SIZE, TEXTURE_PAGE_SIZE, RT_SIZE_NO_CHANGE, IMAGE_FORMAT_R32F, MATERIAL_RT_DEPTH_NONE, false, "_rt_Shadows" );
 #else
 	// unfortunate explicit management required for this render target
 	// 32bpp edram is only largest shadow fragment, but resolved to actual shadow atlas
@@ -5748,8 +5748,8 @@ void CClientShadowMgr::ComputeShadowTextures( const CViewSetup &view, int leafCo
 
 	PIXEVENT( pRenderContext, "Render-To-Texture Shadows" );
 
-	// Clear to white (color unused), black alpha
-	pRenderContext->ClearColor4ub( 255, 255, 255, 0 );
+	// ES: Clear color and alpha to black
+	pRenderContext->ClearColor4ub( 0, 0, 0, 0 );
 
 	// No height clip mode please.
 	MaterialHeightClipMode_t oldHeightClipMode = pRenderContext->GetHeightClipMode();

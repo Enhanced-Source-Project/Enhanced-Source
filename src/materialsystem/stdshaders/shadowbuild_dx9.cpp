@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: A shader that builds the shadow using render-to-texture
 //
@@ -58,13 +58,14 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 			// Add the alphas into the frame buffer
 			EnableAlphaBlending( SHADER_BLEND_ONE, SHADER_BLEND_ONE );
 
-			// base texture.  We just use this for alpha, but enable SRGB read to make everything consistent.
+			// base texture.  We use the R channel.
 			pShaderShadow->EnableTexture( SHADER_SAMPLER0, true );
 			pShaderShadow->EnableSRGBRead( SHADER_SAMPLER0, true );
 
 			pShaderShadow->EnableSRGBWrite( true );
 
-			pShaderShadow->EnableAlphaWrites( true );
+			pShaderShadow->EnableColorWrites( true );
+			pShaderShadow->EnableAlphaWrites( false );
 			pShaderShadow->EnableDepthWrites( false );
 			pShaderShadow->DepthFunc( SHADER_DEPTHFUNC_ALWAYS );
 

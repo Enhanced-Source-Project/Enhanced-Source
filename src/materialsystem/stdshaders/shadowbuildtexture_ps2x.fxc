@@ -23,5 +23,5 @@ HALF4 main( PS_INPUT i ) : COLOR
 	//relevant data is in the alpha channel, modulate vertex alpha by texture alpha
 	float returnAlpha = tex2D( BaseTextureSampler, i.vTexCoord0 ).a * i.vColor.a;
 	
-	return FinalOutput( float4( 1.0f, 1.0f, 1.0f, returnAlpha ), 0, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+	return FinalOutput( float4( returnAlpha, 1.0f, 1.0f, returnAlpha ), 0, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
 }
