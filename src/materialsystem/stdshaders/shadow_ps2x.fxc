@@ -4,7 +4,7 @@
 // STATIC: "DEFERRED_SHADOWS"	"0..0"	[PC]
 // STATIC: "BLOBBY_SHADOWS"		"0..1"
 // STATIC: "DEBUG_SHADOWS"		"0..1"
-// STATIC: "SHADOW_MODE"		"0..1"
+// STATIC: "SHADOW_MODE"		"0..3"
 
 // SKIP: DEBUG_SHADOWS == 1 && SHADOW_MODE != 0
 #include "common_fog_ps_fxc.h"
@@ -99,6 +99,62 @@ float DoShadowPCF( sampler ShadowMap, float2 vTexCoords )
 	return sum / 16.0;
 }
 
+static float2 cPoissonDisc[16] = 
+{
+	float2( -0.94201624, -0.39906216 ),
+	float2( 0.94558609, -0.76890725 ),
+	float2( -0.094184101, -0.92938870 ),
+	float2( 0.34495938, 0.29387760 ),
+	float2( -0.91588581, 0.45771432 ),
+	float2( -0.81544232, -0.87912464 ),
+	float2( -0.38277543, 0.27676845 ),
+	float2( 0.97484398, 0.75648379 ),
+	float2( 0.44323325, -0.97511554 ),
+	float2( 0.53742981, -0.47373420 ),
+	float2( -0.26496911, -0.41893023 ),
+	float2( 0.79197514, 0.19090188 ),
+	float2( -0.24188840, 0.99706507 ),
+	float2( -0.81409955, 0.91437590 ),
+	float2( 0.19984126, 0.78641367 ),
+	float2( 0.14383161, -0.14100790 )
+};
+
+// Poisson disc shadow filtering, 16 samples
+float DoShadowPoisson( sampler ShadowMap, float2 vTexCoords )
+{
+	float sum = 0.0;
+
+	for (int i = 0; i < 16; i++)
+	{
+		sum += tex2DShadow( ShadowMap, vTexCoords + (cPoissonDisc[i] / 700.0) );
+	}
+
+	return sum / 16.0;
+}
+
+// TODO: better random and better seeds
+float random(float4 seed4)
+{
+	float dot_product = dot(seed4, float4(12.9898,78.233,45.164,94.673));
+    return frac(sin(dot_product) * 43758.5453);
+}
+
+// Stratified poisson disc shadow filtering like flashlights. 16 samples
+float DoShadowStratifiedPoisson( sampler ShadowMap, float2 vTexCoords, float3 worldSpacePos )
+{
+	float coverage = 0.0;
+
+	for (int i = 0; i < 16; i++)
+	{
+		//float3 seedSource = vTexCoords.xyy;
+		float3 seedSource = floor(worldSpacePos.zyx * 25.0);
+		int index = int( 16.0 * random(float4(seedSource, i)) ) % 16;
+		coverage += 0.0625 * tex2DShadow( ShadowMap, vTexCoords + (cPoissonDisc[index] / 700.0) );
+	}
+
+	return coverage;
+}
+
 
 float4 main( PS_INPUT i ) : COLOR
 {
@@ -146,9 +202,21 @@ float4 main( PS_INPUT i ) : COLOR
 		shadowCoverage = samples0 * 0.2 + dot( samples1_4, HALF4( 0.2,0.2,0.2,0.2 ) );
 	}
 	#endif
-#else
+#elif SHADOW_MODE == 1
+
 	// PCF
 	shadowCoverage = DoShadowPCF( ShadowSampler, i.texCoord0_shadowAlpha.xy );
+	
+#elif SHADOW_MODE == 2
+
+	// Poisson Disc
+	shadowCoverage = DoShadowPoisson( ShadowSampler, i.texCoord0_shadowAlpha.xy );
+	
+#elif SHADOW_MODE == 3
+
+	// Stratified Poisson Disc
+	shadowCoverage = DoShadowStratifiedPoisson( ShadowSampler, i.texCoord0_shadowAlpha.xy, i.worldPos_projPosZ.xyz );
+	
 #endif
 	
 	// compute "vertex" alpha

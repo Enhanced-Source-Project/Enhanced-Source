@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
@@ -18,7 +18,7 @@
 
 static ConVar r_shadow_rtt_debug( "r_shadow_rtt_debug", "0", FCVAR_CHEAT | FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "Turn on RTT shadow debug (restart map)" );
 
-ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "1", FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "0: old way, 1: PCF" );
+ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "1", FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "0: old way, 1: PCF, 2: Poisson disc, 3: Stratified poisson" );
 ConVar r_shadow_rtt_bias( "r_shadow_rtt_bias", "0.5" );
 
 
