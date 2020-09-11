@@ -10,14 +10,17 @@
 
 #include "shadow_ps20.inc"
 #include "shadow_ps20b.inc"
+#include "shadow_ps30.inc"
 #include "shadow_vs20.inc"
 
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
-static ConVar r_shadow_rtt_debug( "r_shadow_rtt_debug", "0", FCVAR_CHEAT | FCVAR_RELOAD_MATERIALS, "Turn on RTT shadow debug (restart map)" );
+static ConVar r_shadow_rtt_debug( "r_shadow_rtt_debug", "0", FCVAR_CHEAT | FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "Turn on RTT shadow debug (restart map)" );
 
-ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "0", FCVAR_RELOAD_MATERIALS );
+ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "1", FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "0: old way, 1: PCF" );
+ConVar r_shadow_rtt_bias( "r_shadow_rtt_bias", "0.5" );
+
 
 BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 
@@ -70,6 +73,8 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 
 	SHADER_DRAW
 	{
+		bool bEnhancedShadows = r_shadow_rtt_mode.GetInt() != 0;
+
 		SHADOW_STATE
 		{
 			bool bDeferredShadows = ( params[DEFERREDSHADOWS]->GetIntValue() != 0 );
@@ -127,21 +132,36 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 			SET_STATIC_VERTEX_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
 			SET_STATIC_VERTEX_SHADER( shadow_vs20 );
 
-			if( g_pHardwareConfig->SupportsPixelShaders_2_b() )
+			if ( !bEnhancedShadows )
 			{
-				DECLARE_STATIC_PIXEL_SHADER( shadow_ps20b );
-				SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
-				SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
-				SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
-				SET_STATIC_PIXEL_SHADER( shadow_ps20b );
+				if ( g_pHardwareConfig->SupportsPixelShaders_2_b() )
+				{
+					DECLARE_STATIC_PIXEL_SHADER( shadow_ps20b );
+					SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
+					SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
+					SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
+					SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, r_shadow_rtt_mode.GetInt() );
+					SET_STATIC_PIXEL_SHADER( shadow_ps20b );
+				}
+				else
+				{
+					DECLARE_STATIC_PIXEL_SHADER( shadow_ps20 );
+					SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
+					SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
+					SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
+					SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, r_shadow_rtt_mode.GetInt() );
+					SET_STATIC_PIXEL_SHADER( shadow_ps20 );
+				}
 			}
 			else
 			{
-				DECLARE_STATIC_PIXEL_SHADER( shadow_ps20 );
+				// Enhanced Shadow
+				DECLARE_STATIC_PIXEL_SHADER( shadow_ps30 );
 				SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
 				SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
 				SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
-				SET_STATIC_PIXEL_SHADER( shadow_ps20 );
+				SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, r_shadow_rtt_mode.GetInt() );
+				SET_STATIC_PIXEL_SHADER( shadow_ps30 );
 			}
 
 			pShaderShadow->EnableSRGBWrite( true );
@@ -192,15 +212,24 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 			DECLARE_DYNAMIC_VERTEX_SHADER( shadow_vs20 );
 			SET_DYNAMIC_VERTEX_SHADER( shadow_vs20 );
 
-			if( g_pHardwareConfig->SupportsPixelShaders_2_b() )
+			if ( !bEnhancedShadows )
 			{
-				DECLARE_DYNAMIC_PIXEL_SHADER( shadow_ps20b );
-				SET_DYNAMIC_PIXEL_SHADER( shadow_ps20b );
+				if ( g_pHardwareConfig->SupportsPixelShaders_2_b() )
+				{
+					DECLARE_DYNAMIC_PIXEL_SHADER( shadow_ps20b );
+					SET_DYNAMIC_PIXEL_SHADER( shadow_ps20b );
+				}
+				else
+				{
+					DECLARE_DYNAMIC_PIXEL_SHADER( shadow_ps20 );
+					SET_DYNAMIC_PIXEL_SHADER( shadow_ps20 );
+				}
 			}
 			else
 			{
-				DECLARE_DYNAMIC_PIXEL_SHADER( shadow_ps20 );
-				SET_DYNAMIC_PIXEL_SHADER( shadow_ps20 );
+				// Enhanced Shadow
+				DECLARE_DYNAMIC_PIXEL_SHADER( shadow_ps30 );
+				SET_DYNAMIC_PIXEL_SHADER( shadow_ps30 );
 			}
 
 			float eyePos[4];
@@ -226,6 +255,13 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 			}
 
 			pShaderAPI->SetPixelShaderConstant( 4, fConst );
+
+			float shadowParams[4];
+			shadowParams[0] = r_shadow_rtt_bias.GetFloat();	// x: g_ShadowBias
+			shadowParams[1] = pTexture->GetActualWidth();	// y: g_ShadowTextureSize
+			pShaderAPI->SetPixelShaderConstant( 10, shadowParams );
+
+
 		}
 		Draw( );
 	}

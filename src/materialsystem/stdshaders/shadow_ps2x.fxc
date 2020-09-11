@@ -4,6 +4,9 @@
 // STATIC: "DEFERRED_SHADOWS"	"0..0"	[PC]
 // STATIC: "BLOBBY_SHADOWS"		"0..1"
 // STATIC: "DEBUG_SHADOWS"		"0..1"
+// STATIC: "SHADOW_MODE"		"0..1"
+
+// SKIP: DEBUG_SHADOWS == 1 && SHADOW_MODE != 0
 #include "common_fog_ps_fxc.h"
 
 #define HDRTYPE HDR_TYPE_NONE
@@ -13,10 +16,16 @@ const HALF4 g_ShadowColor						: register( c1 );
 const HALF3 g_EyePos							: register( c2 );
 const HALF4 g_FogParams							: register( c3 );
 const float4 g_DeferredParams					: register( c4 );
+
 #define g_MaxFalloffAmount	g_DeferredParams.x
 #define g_vInvScreenSize	g_DeferredParams.yz
 
 const float4x4 g_mInvViewProj					: register( c5 );
+
+const float4 g_ShadowParams						: register( c10 );
+#define g_ShadowBias		g_ShadowParams.x
+#define g_ShadowTextureSize	g_ShadowParams.y
+
 
 sampler ShadowSampler	: register( s0 );
 sampler sDepth			: register( s1 );
@@ -46,6 +55,51 @@ struct PS_INPUT
 #endif
 };
 
+float tex2DShadow( sampler ShadowMap, float2 uv )
+{
+#ifdef SHADER_MODEL_PS_3_0
+	float2 texRes = float2(g_ShadowTextureSize, g_ShadowTextureSize);
+	
+	float2 samplingFragment = uv * texRes - float2(0.5, 0.5);
+    float2 f = frac(samplingFragment);
+	float2 samplePos = ( floor(samplingFragment) + float2(0.5, 0.5) );// / texRes;
+
+	float4 samples;
+	samples.x = tex2D( ShadowMap, (samplePos) / texRes ).r > g_ShadowBias ? 1.0 : 0.0;
+	samples.y = tex2D( ShadowMap, (samplePos + float2(1, 0)) / texRes ).r > g_ShadowBias ? 1.0 : 0.0;
+	samples.z = tex2D( ShadowMap, (samplePos + float2(0, 1)) / texRes ).r > g_ShadowBias ? 1.0 : 0.0;
+	samples.w = tex2D( ShadowMap, (samplePos + float2(1, 1)) / texRes ).r > g_ShadowBias ? 1.0 : 0.0;
+
+	float row1 = lerp( samples.x, samples.y, f.x );
+	float row2 = lerp( samples.z, samples.w, f.x );
+
+	return lerp( row1, row2, f.y );
+#else
+	return tex2D( ShadowMap, uv ).r > g_ShadowBias ? 1.0 : 0.0;
+#endif
+}
+
+// PCF: 4x4 kernel = 16 total samples
+// kernel radius 1.5 px
+float DoShadowPCF( sampler ShadowMap, float2 vTexCoords )
+{
+	float sum = 0;
+	float x, y;
+
+	[unroll]
+	for (y = -1.5; y <= 1.5; y += 1.0)
+	{
+		[unroll]
+		for (x = -1.5; x <= 1.5; x += 1.0)
+		{
+			sum += tex2DShadow( ShadowMap, vTexCoords + (float2(x, y) / g_ShadowTextureSize) );
+		}
+	}
+	
+	return sum / 16.0;
+}
+
+
 float4 main( PS_INPUT i ) : COLOR
 {
 #if DEBUG_SHADOWS == 1
@@ -56,6 +110,9 @@ float4 main( PS_INPUT i ) : COLOR
 
 	HALF shadowCoverage;
 	
+#if SHADOW_MODE == 0 || !defined(SHADER_MODEL_PS_3_0)
+	// Legacy Shadow Filtering
+
 	#if BLOBBY_SHADOWS == 1
 	{
 		shadowCoverage = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
@@ -89,7 +146,11 @@ float4 main( PS_INPUT i ) : COLOR
 		shadowCoverage = samples0 * 0.2 + dot( samples1_4, HALF4( 0.2,0.2,0.2,0.2 ) );
 	}
 	#endif
-
+#else
+	// PCF
+	shadowCoverage = DoShadowPCF( ShadowSampler, i.texCoord0_shadowAlpha.xy );
+#endif
+	
 	// compute "vertex" alpha
 	// NOTE: 0 means black, non-zero adds towards white...
 	float fVertAlpha = saturate( i.vFalloffParams.w * i.vFalloffParams.y + i.vFalloffParams.x );	// could pull the mad into the VS
@@ -98,15 +159,21 @@ float4 main( PS_INPUT i ) : COLOR
 
 	// To accomplish shadow fading, subtract vertex alpha from texture alpha
 	shadowCoverage = saturate( shadowCoverage - fVertAlpha );
-		
+	
 	// Blend between white and the constant color...
 	// return lerp( 1.0-shadowCoverage, 1.0, g_ShadowColor );  
 	
 	// this is equivalent, and saves an instruction
 	HALF4 result = shadowCoverage*g_ShadowColor - shadowCoverage;
 	result = 1.0 + result;
-
-	float alpha = 1.0f;
+	
+	float alpha = 1.0;
+	
+	#if SHADOW_MODE != 0
+		// Get alpha from shadow coverage
+		alpha -= shadowCoverage;
+	#endif
+	
 
 	float fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, g_FogParams, g_EyePos.xyz, i.worldPos_projPosZ.xyz, i.worldPos_projPosZ.w );
 	

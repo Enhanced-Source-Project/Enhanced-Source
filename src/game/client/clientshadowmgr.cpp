@@ -1,4 +1,4 @@
-//===== Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ======//
+//===== Copyright © 1996-2005, Valve Corporation, All rights reserved. ======//
 //
 // Purpose: 
 //
@@ -129,6 +129,7 @@ static ConVar r_shadow_deferred_simd( "r_shadow_deferred_simd", "0" );
 
 static ConVar r_shadow_debug_spew( "r_shadow_debug_spew", "0", FCVAR_CHEAT );
 
+ConVarRef r_shadow_rtt_mode( "r_shadow_rtt_mode" ); // stdshaders/shadow.cpp
 static ConVar r_shadow_rtt_farz( "r_shadow_rtt_farz", "100" );
 
 ConVar r_flashlightdepthtexture( "r_flashlightdepthtexture", "1" );
@@ -299,16 +300,27 @@ void CTextureAllocator::Init()
 void CTextureAllocator::InitRenderTargets( void )
 {
 #if !defined( _X360 )
+	unsigned int textureFlags = TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_CLAMPT;
+
+	if ( r_shadow_rtt_mode.GetInt() != 0 )
+	{
+		// ES: Shadow shader implements software bilinear shadow sampling
+		textureFlags |= TEXTUREFLAGS_POINTSAMPLE;
+	}
+
 	// need depth buffer for shadows
-	m_TexturePage.InitRenderTarget( 
+	ITexture* pShadowsRT = g_pMaterialSystem->CreateNamedRenderTargetTextureEx2(
+		"_rt_Shadows",
 		TEXTURE_PAGE_SIZE,
 		TEXTURE_PAGE_SIZE,
 		RT_SIZE_NO_CHANGE,
 		IMAGE_FORMAT_R32F,
 		MATERIAL_RT_DEPTH_SEPARATE,
-		false,
-		"_rt_Shadows"
+		textureFlags,
+		0
 	);
+
+	m_TexturePage.Init( pShadowsRT );
 #else
 	// unfortunate explicit management required for this render target
 	// 32bpp edram is only largest shadow fragment, but resolved to actual shadow atlas
