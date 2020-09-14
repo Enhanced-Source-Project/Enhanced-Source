@@ -18,9 +18,23 @@
 
 static ConVar r_shadow_rtt_debug( "r_shadow_rtt_debug", "0", FCVAR_CHEAT | FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "Turn on RTT shadow debug (restart map)" );
 
-ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "1", FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "0: old way, 1: PCF, 2: Poisson disc, 3: Stratified poisson" );
+ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "1", FCVAR_RELOAD_MATERIALS | FCVAR_RELOAD_TEXTURES, "0: old way, 1: PCF, 2: Poisson disc, 3: Stratified poisson, 4: PCSS" );
 ConVar r_shadow_rtt_bias( "r_shadow_rtt_bias", "0.5" );
 
+ConVar r_shadow_pcss_filter_scale( "r_shadow_pcss_filter_scale", "0.01", 0, "Vertex alpha is scaled by this amount" );
+ConVar r_shadow_pcss_filter_min( "r_shadow_pcss_filter_min", "0.0015", 0, "Closer to 0 = sharper" );
+ConVar r_shadow_pcss_filter_max( "r_shadow_pcss_filter_max", "0.01", 0, "Larger = softer" ); // TODO: could this just be the same as scale?
+ConVar r_shadow_pcss_samples_max( "r_shadow_pcss_samples_max", "64", 0, "Cannot exceed 64" );
+ConVar r_shadow_pcss_samples_min( "r_shadow_pcss_samples_min", "16" );
+
+ConVar r_shadow_pcss_soft_falloff( "r_shadow_pcss_soft_falloff", "1", 0, "Uses constant r_shadow_rtt_filter_min if disabled." );
+ConVar r_shadow_pcss_var_samples( "r_shadow_pcss_var_samples", "1", 0, "Enable variable sample count optimization" );
+ConVar r_shadow_pcss_samples_var_scale( "r_shadow_pcss_samples_var_scale", "0.2" );
+
+// used in clientshadowmgr.cpp
+ConVar r_shadow_pcss_scale_falloff( "r_shadow_pcss_scale_falloff", "10", 0, "For soft shadows, r_shadowdist will be scaled by this amount to reduce fading" );
+
+ConVar r_shadow_pcss_dist( "r_shadow_pcss_dist", "100", 0, "Distance for soft shadows. Smaller means shadows get softer closer to the object." );
 
 BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 
@@ -74,6 +88,7 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 	SHADER_DRAW
 	{
 		bool bEnhancedShadows = r_shadow_rtt_mode.GetInt() != 0;
+		bool bSoftShadows = r_shadow_rtt_mode.GetInt() == 4;
 
 		SHADOW_STATE
 		{
@@ -96,7 +111,7 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 				//       since these two permutations produce *different* values on 360!!
 				//       This was causing undue darkening of the framebuffer by these
 				//       shadows, which was highly noticeable in very dark areas:
-				if ( r_shadow_rtt_debug.GetBool() )
+				if ( r_shadow_rtt_debug.GetInt() != 0 )
 					DisableAlphaBlending();
 				else
 					EnableAlphaBlending( SHADER_BLEND_ZERO, SHADER_BLEND_SRC_COLOR );
@@ -108,7 +123,7 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 			}
 			else
 			{
-				if ( r_shadow_rtt_debug.GetBool() )
+				if ( r_shadow_rtt_debug.GetInt() != 0 )
 					DisableAlphaBlending();
 				else
 					EnableAlphaBlending( SHADER_BLEND_ZERO, SHADER_BLEND_SRC_COLOR );
@@ -139,8 +154,11 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 					DECLARE_STATIC_PIXEL_SHADER( shadow_ps20b );
 					SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
 					SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
-					SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
-					SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, r_shadow_rtt_mode.GetInt() );
+					SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetInt() );
+					SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, 0 );
+					SET_STATIC_PIXEL_SHADER_COMBO( VARIABLE_SOFTNESS, 0 );
+					SET_STATIC_PIXEL_SHADER_COMBO( VARIABLE_SAMPLES, 0 );
+
 					SET_STATIC_PIXEL_SHADER( shadow_ps20b );
 				}
 				else
@@ -148,8 +166,10 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 					DECLARE_STATIC_PIXEL_SHADER( shadow_ps20 );
 					SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
 					SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
-					SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
-					SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, r_shadow_rtt_mode.GetInt() );
+					SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetInt() );
+					SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, 0 );
+					SET_STATIC_PIXEL_SHADER_COMBO( VARIABLE_SOFTNESS, 0 );
+					SET_STATIC_PIXEL_SHADER_COMBO( VARIABLE_SAMPLES, 0 );
 					SET_STATIC_PIXEL_SHADER( shadow_ps20 );
 				}
 			}
@@ -159,8 +179,10 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 				DECLARE_STATIC_PIXEL_SHADER( shadow_ps30 );
 				SET_STATIC_PIXEL_SHADER_COMBO( DEFERRED_SHADOWS, bDeferredShadows );
 				SET_STATIC_PIXEL_SHADER_COMBO( BLOBBY_SHADOWS, bBlobbyShadows );
-				SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetBool() );
+				SET_STATIC_PIXEL_SHADER_COMBO( DEBUG_SHADOWS, r_shadow_rtt_debug.GetInt() );
 				SET_STATIC_PIXEL_SHADER_COMBO( SHADOW_MODE, r_shadow_rtt_mode.GetInt() );
+				SET_STATIC_PIXEL_SHADER_COMBO( VARIABLE_SOFTNESS, bSoftShadows ? r_shadow_pcss_soft_falloff.GetBool() : 0 );
+				SET_STATIC_PIXEL_SHADER_COMBO( VARIABLE_SAMPLES, bSoftShadows ? r_shadow_pcss_var_samples.GetBool() : 0 );
 				SET_STATIC_PIXEL_SHADER( shadow_ps30 );
 			}
 
@@ -256,10 +278,30 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 
 			pShaderAPI->SetPixelShaderConstant( 4, fConst );
 
+			// g_ShadowParams (10)
+
 			float shadowParams[4];
-			shadowParams[0] = r_shadow_rtt_bias.GetFloat();	// x: g_ShadowBias
-			shadowParams[1] = pTexture->GetActualWidth();	// y: g_ShadowTextureSize
+			shadowParams[0] = r_shadow_rtt_bias.GetFloat();					// x: g_ShadowBias
+			shadowParams[1] = pTexture->GetActualWidth();					// y: g_ShadowTextureSize
+
+			shadowParams[2] = (float)r_shadow_pcss_samples_min.GetInt();	// z: g_ShadowSamplesMin
+			shadowParams[3] = (float)r_shadow_pcss_samples_max.GetInt();	// w: g_ShadowSamplesMax
+
 			pShaderAPI->SetPixelShaderConstant( 10, shadowParams );
+
+			// g_ShadowParams2 (11)
+
+			shadowParams[0] = r_shadow_pcss_filter_scale.GetFloat();		// x: g_ShadowFilterScale
+			shadowParams[1] = r_shadow_pcss_filter_min.GetFloat();			// y: g_ShadowFilterMin
+			shadowParams[2] = r_shadow_pcss_filter_max.GetFloat();			// z: g_ShadowFilterMax
+			shadowParams[3] = r_shadow_pcss_samples_var_scale.GetFloat();	// w: g_ShadowSampleFilterScale
+			pShaderAPI->SetPixelShaderConstant( 11, shadowParams );
+
+			// g_ShadowParams3 (12)
+
+			shadowParams[0] = r_shadow_pcss_dist.GetFloat();				// x: g_SoftShadowDistance
+
+			pShaderAPI->SetPixelShaderConstant( 12, shadowParams );
 
 
 		}

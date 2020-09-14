@@ -129,8 +129,10 @@ static ConVar r_shadow_deferred_simd( "r_shadow_deferred_simd", "0" );
 
 static ConVar r_shadow_debug_spew( "r_shadow_debug_spew", "0", FCVAR_CHEAT );
 
-ConVarRef r_shadow_rtt_mode( "r_shadow_rtt_mode" ); // stdshaders/shadow.cpp
+// ConVars from stdshaders/shadow.cpp
+static ConVar r_shadow_rtt_mode( "r_shadow_rtt_mode", "1" );
 static ConVar r_shadow_rtt_farz( "r_shadow_rtt_farz", "100" );
+static ConVar r_shadow_pcss_scale_falloff( "r_shadow_pcss_scale_falloff", "10" );
 
 ConVar r_flashlightdepthtexture( "r_flashlightdepthtexture", "1" );
 
@@ -2054,7 +2056,7 @@ const Vector &CClientShadowMgr::GetShadowDirection() const
 //-----------------------------------------------------------------------------
 float CClientShadowMgr::GetShadowDistance( IClientRenderable *pRenderable ) const
 {
-	float flDist = m_flShadowCastDist;
+	float flDist = GetShadowDistance();
 
 	// Allow the renderable to override the default
 	pRenderable->GetShadowCastDistance( &flDist, GetActualShadowCastType( pRenderable ) );
@@ -2227,6 +2229,9 @@ void CClientShadowMgr::SetShadowDistance( float flMaxDistance )
 
 float CClientShadowMgr::GetShadowDistance( ) const
 {
+	if ( r_shadow_rtt_mode.GetInt() == 4 ) // ES: soft shadows
+		return m_flShadowCastDist * r_shadow_pcss_scale_falloff.GetFloat();
+
 	return m_flShadowCastDist;
 }
 
