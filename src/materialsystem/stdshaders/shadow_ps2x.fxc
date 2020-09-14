@@ -10,7 +10,7 @@
 
 // SKIP: DEBUG_SHADOWS == 1 && SHADOW_MODE != 0
 // SKIP: DEBUG_SHADOWS == 2 && SHADOW_MODE != 0
-// SKIP: DEBUG_SHADOWS == 3 && SHADOW_MODE != 4
+// SKIP: DEBUG_SHADOWS == 3 && SHADOW_MODE != 4 && VARIABLE_SOFTNESS != 1
 // SKIP: BLOBBY_SHADOWS == 1 && SHADOW_MODE != 0
 // SKIP: DEFERRED_SHADOWS == 1 && SHADOW_MODE != 0
 // SKIP: VARIABLE_SOFTNESS != 0 && SHADOW_MODE != 4
@@ -200,92 +200,104 @@ float4 main( PS_INPUT i ) : COLOR
 
 	HALF shadowCoverage;
 	
-#if SHADOW_MODE == 0 || !defined(SHADER_MODEL_PS_3_0)
-	// Legacy Shadow Filtering
-
-	#if BLOBBY_SHADOWS == 1
+	#if SHADOW_MODE == 0 || !defined(SHADER_MODEL_PS_3_0)
 	{
-		shadowCoverage = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
+		// Legacy Shadow Filtering
+
+		#if BLOBBY_SHADOWS == 1
+		{
+			shadowCoverage = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
+		}
+		#elif !defined( _X360 )
+		{
+			HALF samples0;
+			HALF4  samples1_4;
+			samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
+			samples1_4.x = tex2D( ShadowSampler, i.texCoord1_2.xy ).r;
+			samples1_4.y = tex2D( ShadowSampler, i.texCoord1_2.wz ).r;
+			samples1_4.z = tex2D( ShadowSampler, i.texCoord3_4.xy ).r;
+			samples1_4.w = tex2D( ShadowSampler, i.texCoord3_4.wz ).r;
+
+			// Interpolate between a bunch of jittered shadow samples.
+			shadowCoverage = samples0 * 0.2 + dot( samples1_4, HALF4( 0.2, 0.2, 0.2, 0.2 ) );
+		}
+		#else
+		{
+			float samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
+			float2 texCoord = i.texCoord0_shadowAlpha.xy;
+			float4 samples1_4;
+			asm {
+				tfetch2D samples1_4.w___, texCoord.xy, ShadowSampler, OffsetX = -1.0, OffsetY = -1.0
+				tfetch2D samples1_4._w__, texCoord.xy, ShadowSampler, OffsetX =  1.0, OffsetY = -1.0
+				tfetch2D samples1_4.__w_, texCoord.xy, ShadowSampler, OffsetX = -1.0, OffsetY =  1.0
+				tfetch2D samples1_4.___w, texCoord.xy, ShadowSampler, OffsetX =  1.0, OffsetY =  1.0
+			};
+
+			// Interpolate between a bunch of jittered shadow samples.
+			shadowCoverage = samples0 * 0.2 + dot( samples1_4, HALF4( 0.2,0.2,0.2,0.2 ) );
+		}
+		#endif
 	}
-	#elif !defined( _X360 )
+	#elif SHADOW_MODE == 1
 	{
-		HALF samples0;
-		HALF4  samples1_4;
-		samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
-		samples1_4.x = tex2D( ShadowSampler, i.texCoord1_2.xy ).r;
-		samples1_4.y = tex2D( ShadowSampler, i.texCoord1_2.wz ).r;
-		samples1_4.z = tex2D( ShadowSampler, i.texCoord3_4.xy ).r;
-		samples1_4.w = tex2D( ShadowSampler, i.texCoord3_4.wz ).r;
-
-		// Interpolate between a bunch of jittered shadow samples.
-		shadowCoverage = samples0 * 0.2 + dot( samples1_4, HALF4( 0.2, 0.2, 0.2, 0.2 ) );
+		// PCF
+		shadowCoverage = DoShadowPCF( ShadowSampler, i.texCoord0_shadowAlpha.xy );
+	}	
+	#elif SHADOW_MODE == 2
+	{
+		// Poisson Disc
+		shadowCoverage = DoShadowPoisson( ShadowSampler, i.texCoord0_shadowAlpha.xy );
 	}
-	#else
+	#elif SHADOW_MODE == 3
 	{
-		float samples0 = tex2D( ShadowSampler, i.texCoord0_shadowAlpha.xy ).r;
-		float2 texCoord = i.texCoord0_shadowAlpha.xy;
-		float4 samples1_4;
-		asm {
-			tfetch2D samples1_4.w___, texCoord.xy, ShadowSampler, OffsetX = -1.0, OffsetY = -1.0
-			tfetch2D samples1_4._w__, texCoord.xy, ShadowSampler, OffsetX =  1.0, OffsetY = -1.0
-			tfetch2D samples1_4.__w_, texCoord.xy, ShadowSampler, OffsetX = -1.0, OffsetY =  1.0
-			tfetch2D samples1_4.___w, texCoord.xy, ShadowSampler, OffsetX =  1.0, OffsetY =  1.0
-		};
+		// Stratified Poisson Disc
+		shadowCoverage = DoShadowStratifiedPoisson( ShadowSampler, i.texCoord0_shadowAlpha.xy, i.worldPos_projPosZ.xyz );
+	}
+	#elif SHADOW_MODE == 4
+	{
+	
+		float filterSize;
+		int sampleCount;
 
-		// Interpolate between a bunch of jittered shadow samples.
-		shadowCoverage = samples0 * 0.2 + dot( samples1_4, HALF4( 0.2,0.2,0.2,0.2 ) );
+		#if VARIABLE_SOFTNESS == 1
+		{
+			float fSoftness = i.vFalloffParams.w * i.vFalloffParams.y + i.vFalloffParams.x; // (Z - Offset) / Dist
+
+			// re-calculate falloff with g_SoftShadowDistance
+			// [ Given vFalloffParams.y = 1/Dist; fSoftness = (Z-Offset)/Dist ]
+			fSoftness *= (1.0f / i.vFalloffParams.y) / g_SoftShadowDistance;
+
+			fSoftness = saturate( fSoftness ); 
+
+			// Debug Mode 3
+			#if DEBUG_SHADOWS == 3
+			return FinalOutput( float4( fSoftness, fSoftness, fSoftness, 1.0f ), 0.0f, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+			#endif
+
+			// TODO: probably need a better curve
+			filterSize = clamp( g_ShadowFilterScale * fSoftness, g_ShadowFilterMin, g_ShadowFilterMax );
+		}
+		#else
+		{
+			filterSize = g_ShadowFilterMin;
+		}
+		#endif
+
+		#if VARIABLE_SAMPLES == 1
+		{
+			// TODO: probably want a better, likely simpler, algorithm for this
+			float sampleCountScaled = max( saturate( (filterSize - g_ShadowFilterMin) / (g_ShadowSampleFilterScale * g_ShadowFilterMax) ) * g_ShadowSamplesMax, g_ShadowSamplesMin );
+			sampleCount = round(sampleCountScaled);
+		}
+		#else
+		{
+			sampleCount = round(g_ShadowSamplesMax);
+		}
+		#endif
+
+		shadowCoverage = DoShadowFibonacci( ShadowSampler, i.texCoord0_shadowAlpha.xy, filterSize, sampleCount );
 	}
 	#endif
-#elif SHADOW_MODE == 1
-
-	// PCF
-	shadowCoverage = DoShadowPCF( ShadowSampler, i.texCoord0_shadowAlpha.xy );
-	
-#elif SHADOW_MODE == 2
-
-	// Poisson Disc
-	shadowCoverage = DoShadowPoisson( ShadowSampler, i.texCoord0_shadowAlpha.xy );
-	
-#elif SHADOW_MODE == 3
-
-	// Stratified Poisson Disc
-	shadowCoverage = DoShadowStratifiedPoisson( ShadowSampler, i.texCoord0_shadowAlpha.xy, i.worldPos_projPosZ.xyz );
-	
-#elif SHADOW_MODE == 4
-
-	float filterSize;
-	int sampleCount;
-
-#if VARIABLE_SOFTNESS == 1
-	float fSoftness = i.vFalloffParams.w * i.vFalloffParams.y + i.vFalloffParams.x; // (Z - Offset) / Dist
-
-	// re-calculate falloff with g_SoftShadowDistance
-	// [ Given vFalloffParams.y = 1/Dist; fSoftness = (Z-Offset)/Dist ]
-	fSoftness *= (1.0f / i.vFalloffParams.y) / g_SoftShadowDistance;
-
-	fSoftness = saturate( fSoftness ); 
-
-	// Debug Mode 3
-#if DEBUG_SHADOWS == 3
-	return FinalOutput( float4( fSoftness, fSoftness, fSoftness, 1.0f ), 0.0f, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
-#endif
-
-	// TODO: probably need a better curve
-	filterSize = clamp( g_ShadowFilterScale * fSoftness, g_ShadowFilterMin, g_ShadowFilterMax );
-#else 
-	filterSize = g_ShadowFilterMin;
-#endif
-
-#if VARIABLE_SAMPLES == 1
-	// TODO: probably want a better, likely simpler, algorithm for this
-	float sampleCountScaled = max( saturate( (filterSize - g_ShadowFilterMin) / (g_ShadowSampleFilterScale * g_ShadowFilterMax) ) * g_ShadowSamplesMax, g_ShadowSamplesMin );
-	sampleCount = round(sampleCountScaled);
-#else
-	sampleCount = round(g_ShadowSamplesMax);
-#endif
-
-	shadowCoverage = DoShadowFibonacci( ShadowSampler, i.texCoord0_shadowAlpha.xy, filterSize, sampleCount );
-#endif
 
 	// compute "vertex" alpha
 	// NOTE: 0 means black, non-zero adds towards white...
@@ -307,10 +319,10 @@ float4 main( PS_INPUT i ) : COLOR
 	
 	float alpha = 1.0;
 	
-	#if SHADOW_MODE != 0
+	//#if SHADOW_MODE != 0
 		// Get alpha from shadow coverage
 		//alpha -= shadowCoverage;
-	#endif
+	//#endif
 	
 
 	float fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, g_FogParams, g_EyePos.xyz, i.worldPos_projPosZ.xyz, i.worldPos_projPosZ.w );
@@ -320,6 +332,7 @@ float4 main( PS_INPUT i ) : COLOR
 	
 	// Call FinalOutput without fog!
 	return FinalOutput( float4( result.rgb, alpha ), fogFactor, PIXEL_FOG_TYPE_NONE, TONEMAP_SCALE_NONE );
+
 #endif // DEBUG_SHADOWS == 0
 }
 
