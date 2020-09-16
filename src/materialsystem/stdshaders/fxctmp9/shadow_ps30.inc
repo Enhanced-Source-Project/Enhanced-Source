@@ -13,7 +13,7 @@
 // defined $LIGHTING_PREVIEW && defined $FASTPATH && $LIGHTING_PREVIEW && $FASTPATH
 // ($FLASHLIGHT || $FLASHLIGHTSHADOWS) && $LIGHTING_PREVIEW
 #include "shaderlib/cshader.h"
-class shadow_ps20b_Static_Index
+class shadow_ps30_Static_Index
 {
 private:
 	int m_nDEFERRED_SHADOWS;
@@ -143,7 +143,7 @@ public:
 	}
 public:
 	// CONSTRUCTOR
-	shadow_ps20b_Static_Index( IShaderShadow *pShaderShadow, IMaterialVar **params )
+	shadow_ps30_Static_Index( IShaderShadow *pShaderShadow, IMaterialVar **params )
 	{
 #ifdef _DEBUG
 		m_bDEFERRED_SHADOWS = false;
@@ -181,8 +181,8 @@ public:
 		return ( 2 * m_nDEFERRED_SHADOWS ) + ( 2 * m_nBLOBBY_SHADOWS ) + ( 4 * m_nDEBUG_SHADOWS ) + ( 16 * m_nSHADOW_MODE ) + ( 80 * m_nVARIABLE_SOFTNESS ) + ( 160 * m_nVARIABLE_SAMPLES ) + 0;
 	}
 };
-#define shaderStaticTest_shadow_ps20b psh_forgot_to_set_static_DEFERRED_SHADOWS + psh_forgot_to_set_static_BLOBBY_SHADOWS + psh_forgot_to_set_static_DEBUG_SHADOWS + psh_forgot_to_set_static_SHADOW_MODE + psh_forgot_to_set_static_VARIABLE_SOFTNESS + psh_forgot_to_set_static_VARIABLE_SAMPLES + 0
-class shadow_ps20b_Dynamic_Index
+#define shaderStaticTest_shadow_ps30 psh_forgot_to_set_static_DEFERRED_SHADOWS + psh_forgot_to_set_static_BLOBBY_SHADOWS + psh_forgot_to_set_static_DEBUG_SHADOWS + psh_forgot_to_set_static_SHADOW_MODE + psh_forgot_to_set_static_VARIABLE_SOFTNESS + psh_forgot_to_set_static_VARIABLE_SAMPLES + 0
+class shadow_ps30_Dynamic_Index
 {
 private:
 	int m_nPIXELFOGTYPE;
@@ -207,7 +207,7 @@ public:
 	}
 public:
 	// CONSTRUCTOR
-	shadow_ps20b_Dynamic_Index( IShaderDynamicAPI *pShaderAPI )
+	shadow_ps30_Dynamic_Index( IShaderDynamicAPI *pShaderAPI )
 	{
 #ifdef _DEBUG
 		m_bPIXELFOGTYPE = true;
@@ -225,4 +225,4 @@ public:
 		return ( 1 * m_nPIXELFOGTYPE ) + 0;
 	}
 };
-#define shaderDynamicTest_shadow_ps20b 0
+#define shaderDynamicTest_shadow_ps30 0

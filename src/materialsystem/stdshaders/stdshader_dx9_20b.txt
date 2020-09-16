@@ -194,6 +194,7 @@ shadow_ps2x.fxc
 shadow_vs20.fxc
 
 shadowbuildtexture_ps2x.fxc
+shadowbuildtexture_vs20.fxc
 
 ShadowModel.psh
 ShadowModel.vsh

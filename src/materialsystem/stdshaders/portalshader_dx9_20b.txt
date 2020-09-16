@@ -23,3 +23,8 @@ portalstaticoverlay_vs20.fxc
 
 portal_refract_vs20.fxc
 portal_refract_ps2x.fxc
+
+shadow_ps2x.fxc
+shadow_vs20.fxc
+shadowbuildtexture_ps2x.fxc
+shadowbuildtexture_vs20.fxc
