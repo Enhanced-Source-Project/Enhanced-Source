@@ -96,7 +96,7 @@ BEGIN_VS_SHADER_FLAGS( Shadow, "Enhanced Shadow", SHADER_NOT_EDITABLE )
 			bool bBlobbyShadows = ( params[BLOBBYSHADOWS]->GetIntValue() != 0 );
 
 			pShaderShadow->EnableTexture( SHADER_SAMPLER0, true );
-			pShaderShadow->EnableSRGBRead( SHADER_SAMPLER0, true );
+			pShaderShadow->EnableSRGBRead( SHADER_SAMPLER0, false ); // no SRGB
 
 			if ( bDeferredShadows )
 			{

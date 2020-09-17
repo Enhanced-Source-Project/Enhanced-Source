@@ -64,12 +64,13 @@ BEGIN_VS_SHADER_FLAGS( ShadowBuild_DX9, "Help for ShadowBuild", SHADER_NOT_EDITA
 			else
 				DisableAlphaBlending();
 
-			// base texture.  We use the R channel.
+			// base texture.  We use the alpha channel.
 			pShaderShadow->EnableTexture( SHADER_SAMPLER0, true );
 			pShaderShadow->EnableSRGBRead( SHADER_SAMPLER0, true );
 
-			pShaderShadow->EnableSRGBWrite( true );
+			pShaderShadow->EnableSRGBWrite( false ); // no SRGB
 
+			// We write to the R channel.
 			pShaderShadow->EnableColorWrites( true );
 			pShaderShadow->EnableAlphaWrites( false );
 
