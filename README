@@ -10,7 +10,8 @@ Features
 Requirements
 -----------------------
 
--MFC Multibyte library for Visual Studio
+- Visual Studio 2010/12/13
+- MFC Multibyte library for Visual Studio
 
 Contributors
 -----------------------
